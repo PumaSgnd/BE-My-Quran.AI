@@ -1,81 +1,153 @@
 // src/config/passport-setup.js
+// Daftarin strategi Passport: Google & Facebook + serialize/deserialize user (PostgreSQL)
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
-const db = require('./db');
+const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+const { Strategy: FacebookStrategy } = require('passport-facebook');
+const { Pool } = require('pg');
 
-// PENTING: Dapatkan kredensial ini dari Google Cloud Console & Facebook for Developers
-// Simpan di file .env kamu!
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
-const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
+// Pool PostgreSQL (pakai ENV yang sudah ada di .env kamu)
+const pool = new Pool({
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_DATABASE || 'quran_db',
+    password: process.env.DB_PASSWORD || 'root',
+    port: Number(process.env.DB_PORT || 5432),
+});
 
-// Menyimpan user ID ke dalam session
+// Buat table users kalau belum ada (sederhana)
+const ensureUsersTable = async () => {
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      provider TEXT NOT NULL,
+      provider_id TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      email TEXT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+};
+ensureUsersTable().catch(err => {
+    console.error('Gagal membuat tabel users:', err);
+});
+
+// Helper: ambil/insert user berdasarkan provider & provider_id
+async function findOrCreateUser({ provider, provider_id, display_name, email }) {
+    const selectRes = await pool.query(
+        'SELECT id, provider, provider_id, display_name, email, created_at FROM users WHERE provider = $1 AND provider_id = $2 LIMIT 1',
+        [provider, provider_id]
+    );
+    if (selectRes.rows.length > 0) {
+        return selectRes.rows[0];
+    }
+    const insertRes = await pool.query(
+        `INSERT INTO users (provider, provider_id, display_name, email)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, provider, provider_id, display_name, email, created_at`,
+        [provider, provider_id, display_name, email]
+    );
+    return insertRes.rows[0];
+}
+
+// ---- Serialize & deserialize session ----
 passport.serializeUser((user, done) => {
+    // Simpan id user ke session
     done(null, user.id);
 });
 
-// Mengambil data user dari session berdasarkan ID
 passport.deserializeUser(async (id, done) => {
     try {
-        const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [id]);
-        done(null, rows[0]);
-    } catch (error) {
-        done(error, null);
+        const res = await pool.query(
+            'SELECT id, provider, provider_id, display_name, email, created_at FROM users WHERE id = $1 LIMIT 1',
+            [id]
+        );
+        if (res.rows.length === 0) return done(null, false);
+        return done(null, res.rows[0]);
+    } catch (err) {
+        return done(err);
     }
 });
 
-// Konfigurasi Strategi Google
-passport.use(new GoogleStrategy({
-    clientID: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/v1/auth/google/callback" // URL callback
-}, async (accessToken, refreshToken, profile, done) => {
-    // Fungsi ini berjalan setelah user berhasil login di Google
-    try {
-        // Cek apakah user sudah ada di database kita
-        const { rows } = await db.query('SELECT * FROM users WHERE provider = $1 AND provider_id = $2', ['google', profile.id]);
+// ---- Google OAuth2 Strategy ----
+const {
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_CALLBACK_URL,
+    FACEBOOK_APP_ID,
+    FACEBOOK_APP_SECRET,
+    FACEBOOK_CALLBACK_URL,
+} = process.env;
 
-        if (rows.length > 0) {
-            // Jika sudah ada, langsung lanjutkan
-            return done(null, rows[0]);
-        } else {
-            // Jika belum ada, buat user baru di database
-            const newUserQuery = `
-                INSERT INTO users (provider, provider_id, display_name, email)
-                VALUES ($1, $2, $3, $4) RETURNING *;
-            `;
-            const newUser = await db.query(newUserQuery, ['google', profile.id, profile.displayName, profile.emails[0].value]);
-            return done(null, newUser.rows[0]);
-        }
-    } catch (error) {
-        return done(error, null);
-    }
-}));
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_CALLBACK_URL) {
+    passport.use(
+        new GoogleStrategy(
+            {
+                clientID: GOOGLE_CLIENT_ID,
+                clientSecret: GOOGLE_CLIENT_SECRET,
+                callbackURL: GOOGLE_CALLBACK_URL,
+                // penting jika app di belakang proxy/HTTPS (Render/NGINX): 
+                // passReqToCallback: false,
+            },
+            async (_accessToken, _refreshToken, profile, done) => {
+                try {
+                    const display_name = profile.displayName || 'Google User';
+                    const email = Array.isArray(profile.emails) && profile.emails.length
+                        ? profile.emails[0].value
+                        : null;
 
-// Konfigurasi Strategi Facebook
-passport.use(new FacebookStrategy({
-    clientID: FACEBOOK_APP_ID,
-    clientSecret: FACEBOOK_APP_SECRET,
-    callbackURL: "/api/v1/auth/facebook/callback",
-    profileFields: ['id', 'displayName', 'emails']
-}, async (accessToken, refreshToken, profile, done) => {
-    // Logika yang sama seperti Google
-    try {
-        const { rows } = await db.query('SELECT * FROM users WHERE provider = $1 AND provider_id = $2', ['facebook', profile.id]);
+                    const user = await findOrCreateUser({
+                        provider: 'google',
+                        provider_id: profile.id,
+                        display_name,
+                        email,
+                    });
 
-        if (rows.length > 0) {
-            return done(null, rows[0]);
-        } else {
-            const newUserQuery = `
-                INSERT INTO users (provider, provider_id, display_name, email)
-                VALUES ($1, $2, $3, $4) RETURNING *;
-            `;
-            const newUser = await db.query(newUserQuery, ['facebook', profile.id, profile.displayName, profile.emails ? profile.emails[0].value : null]);
-            return done(null, newUser.rows[0]);
-        }
-    } catch (error) {
-        return done(error, null);
-    }
-}));
+                    return done(null, user);
+                } catch (err) {
+                    console.error('GoogleStrategy error:', err);
+                    return done(err);
+                }
+            }
+        )
+    );
+    console.log('✅ Passport: Google strategy registered');
+} else {
+    console.warn('⚠️  Passport: Google strategy NOT registered (cek GOOGLE_* env)');
+}
+
+// ---- Facebook OAuth Strategy ----
+if (FACEBOOK_APP_ID && FACEBOOK_APP_SECRET && FACEBOOK_CALLBACK_URL) {
+    passport.use(
+        new FacebookStrategy(
+            {
+                clientID: FACEBOOK_APP_ID,
+                clientSecret: FACEBOOK_APP_SECRET,
+                callbackURL: FACEBOOK_CALLBACK_URL,
+                profileFields: ['id', 'displayName', 'emails'], // supaya email terisi jika diizinkan
+            },
+            async (_accessToken, _refreshToken, profile, done) => {
+                try {
+                    const display_name = profile.displayName || 'Facebook User';
+                    const email = Array.isArray(profile.emails) && profile.emails.length
+                        ? profile.emails[0].value
+                        : null;
+
+                    const user = await findOrCreateUser({
+                        provider: 'facebook',
+                        provider_id: profile.id,
+                        display_name,
+                        email,
+                    });
+
+                    return done(null, user);
+                } catch (err) {
+                    console.error('FacebookStrategy error:', err);
+                    return done(err);
+                }
+            }
+        )
+    );
+    console.log('✅ Passport: Facebook strategy registered');
+} else {
+    console.warn('⚠️  Passport: Facebook strategy NOT registered (cek FACEBOOK_* env)');
+}

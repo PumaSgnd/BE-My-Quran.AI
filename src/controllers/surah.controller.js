@@ -56,70 +56,80 @@ const getSurahById = async (req, res) => {
 // --- GANTI FUNGSI LAMA DENGAN YANG BARU INI ---
 const getAyahsBySurahId = async (req, res) => {
     try {
-        const { id } = req.params; // nomor surah
-        const { lang, reciter, segments } = req.query; // parameter query
+        const surahId = Number(req.params.id);
 
-        // 1. Bangun query dasar untuk mengambil data ayat
-        let selectClauses = ['a.*'];
-        let joinClauses = '';
-        const queryParams = [id];
+        // query lain (yg mungkin dipakai FE) — TIDAK bikin error walau belum kita gunakan
+        const allFlag = req.query.all === '1';
+        const page = allFlag ? 1 : (Number(req.query.page) || 1);
+        const limitDefault = 50;
+        const reqLimit = Number(req.query.limit) || limitDefault;
+        const MAX_LIMIT = 300;
+        const effLimit = allFlag ? undefined : Math.min(reqLimit, MAX_LIMIT);
+        const offset = allFlag ? 0 : (page - 1) * Math.min(reqLimit, MAX_LIMIT);
 
-        // 2. Jika ada parameter ?lang, tambahkan data terjemahan
-        if (lang) {
-            selectClauses.push('t.translation_text', 't.footnotes');
-            joinClauses += ` LEFT JOIN translations t ON a.id = t.ayah_id AND t.author_name = $${queryParams.length + 1}`;
-            const authorName = lang.charAt(0).toUpperCase() + lang.slice(1);
-            queryParams.push(authorName);
+        // cek surah
+        const surahRes = await db.query(
+            'SELECT id, name_simple FROM surahs WHERE id = $1',
+            [surahId]
+        );
+        if (surahRes.rows.length === 0) {
+            return res.status(404).json({ status: 'error', message: 'Surah tidak ditemukan' });
         }
 
-        // 3. Jika ada parameter ?segments=true dan ?reciter, tambahkan data segmen
-        if (segments === 'true' && reciter) {
-            // Ini adalah subquery canggih untuk mengambil semua segmen
-            // yang cocok dan menggabungkannya menjadi satu kolom JSON bernama "segments"
-            const subQuery = `
-                (SELECT json_agg(
-                    json_build_object(
-                        'pos', seg.word_position,
-                        'start', seg.start_time_ms,
-                        'end', seg.end_time_ms
-                    ) ORDER BY seg.word_position ASC
-                )
-                FROM audio_segments seg
-                WHERE seg.ayah_id = a.id AND seg.reciter_id = $${queryParams.length + 1})
-            `;
-            selectClauses.push(`${subQuery} as segments`);
-            queryParams.push(reciter);
-        }
+        // hitung total
+        const totalRes = await db.query(
+            'SELECT COUNT(*)::int AS count FROM ayahs WHERE surah_number = $1',
+            [surahId]
+        );
+        const total = totalRes.rows[0].count;
+        const limitForQuery = allFlag ? Math.min(total, MAX_LIMIT) : effLimit;
+        const totalPages = allFlag ? 1 : Math.max(1, Math.ceil(total / limitForQuery));
 
-        // 4. Gabungkan semua bagian menjadi satu query SQL akhir
-        const query = `
-            SELECT ${selectClauses.join(', ')}
-            FROM ayahs a
-            ${joinClauses}
-            WHERE a.surah_number = $1
-            ORDER BY a.ayah_number ASC;
-        `;
+        // AMBIL * LALU MAP TEKS DI JS → aman kalau nama kolom beda
+        const ayahsRes = await db.query(
+            `SELECT *
+         FROM ayahs
+        WHERE surah_number = $1
+        ORDER BY ayah_number ASC
+        LIMIT $2 OFFSET $3`,
+            [surahId, limitForQuery, offset]
+        );
 
-        // 5. Eksekusi query
-        const { rows } = await db.query(query, queryParams);
+        // pilih kolom teks Arab yang tersedia
+        const pickText = (r) =>
+            r.text_uthmani ??
+            r.text_qpc_hafs ??
+            r.text_arabic ??
+            r.text ??
+            r.text_imlaei ??
+            r.text_simple ?? // tambahkan kandidat lain kalau ada
+            null;
 
-        if (rows.length === 0) {
-            const surahCheck = await db.query('SELECT id FROM surahs WHERE id = $1', [id]);
-            if (surahCheck.rows.length === 0) {
-                return res.status(404).json({ status: 'error', message: `Surah dengan ID ${id} tidak ditemukan.` });
-            }
-        }
+        const data = ayahsRes.rows.map(r => ({
+            id: r.id,
+            ayah_number: r.ayah_number,
+            verse_key: r.verse_key || `${surahId}:${r.ayah_number}`,
+            text_ar: pickText(r), // <- inilah teks Arabnya
+        }));
 
-        res.status(200).json({
+        return res.json({
             status: 'success',
-            surah_number: parseInt(id, 10),
-            count: rows.length,
-            data: rows,
+            meta: {
+                surah: { id: surahRes.rows[0].id, name: surahRes.rows[0].name_simple },
+                page: allFlag ? 1 : page,
+                limit: limitForQuery,
+                total,
+                totalPages
+            },
+            data
         });
-
-    } catch (error) {
-        console.error('Error di getAyahsBySurahId:', error);
-        res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    } catch (err) {
+        console.error('getAyahsBySurahId error:', err);
+        // Jangan bocorin detail di production
+        return res.status(500).json({
+            status: 'error',
+            message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : (err.message || 'Internal Server Error'),
+        });
     }
 };
 
