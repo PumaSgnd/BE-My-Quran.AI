@@ -1,5 +1,6 @@
 // src/index.js
 require('dotenv').config();
+require('express-async-errors'); // penting: supaya error di async route ke-catch di Express v4
 
 const express = require('express');
 const cors = require('cors');
@@ -25,6 +26,7 @@ const ORIGINS = (process.env.CORS_ORIGIN || '')
 
 // jika di belakang proxy (Vercel/Render/Nginx), aktifkan ini
 app.set('trust proxy', 1);
+app.disable('x-powered-by'); // kecilkan fingerprinting
 
 // -------- middlewares umum --------
 app.use(compression());
@@ -119,9 +121,15 @@ app.use('/api/tajwid', require('./routes/tajwid.routes.js'));
 app.use((_req, res) => {
     res.status(404).json({ status: 'Error', message: 'Resource tidak ditemukan' });
 });
+
+// global error handler (Express 4 style, sudah menangkap async berkat express-async-errors)
 app.use((err, _req, res, _next) => {
-    console.error(err.stack);
-    res.status(500).json({ status: 'Error', message: 'Terjadi kesalahan pada server' });
+    // kalau rate-limit / validasi kasih status dari error jika ada
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || 'Terjadi kesalahan pada server';
+    // log stack saat dev
+    if (!isProd) console.error(err);
+    res.status(status).json({ status: 'Error', message });
 });
 
 app.listen(PORT, () => {
