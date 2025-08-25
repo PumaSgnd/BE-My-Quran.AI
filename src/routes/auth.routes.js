@@ -1,6 +1,7 @@
 // src/routes/auth.routes.js
 const express = require('express');
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 /**
@@ -35,9 +36,26 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
  *         description: Gagal tukar code OAuth menjadi token / gagal simpan user
  */
 router.get(
-    '/google/callback',
-    passport.authenticate('google', { failureRedirect: '/api/auth/profile' }),
-    (req, res) => res.redirect('/api/auth/profile')
+  '/google/callback',
+  passport.authenticate('google', { failureRedirect: '/api/auth/profile' }),
+  (req, res) => {
+    const token = jwt.sign(
+      {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.display_name,
+      },
+      process.env.JWT_SECRET || 'default_secret',
+      { expiresIn: '7d' }
+    );
+
+    // Redirect ke Flutter deep link
+    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(
+      req.user.display_name
+    )}&email=${encodeURIComponent(req.user.email || '')}`;
+
+    res.redirect(redirectUrl);
+  }
 );
 
 /**
@@ -72,9 +90,25 @@ router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }))
  *         description: Gagal tukar code OAuth menjadi token / gagal simpan user
  */
 router.get(
-    '/facebook/callback',
-    passport.authenticate('facebook', { failureRedirect: '/api/auth/profile' }),
-    (req, res) => res.redirect('/api/auth/profile')
+  '/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/api/auth/profile' }),
+  (req, res) => {
+    const token = jwt.sign(
+      {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.display_name,
+      },
+      process.env.JWT_SECRET || 'default_secret',
+      { expiresIn: '7d' }
+    );
+
+    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(
+      req.user.display_name
+    )}&email=${encodeURIComponent(req.user.email || '')}`;
+
+    res.redirect(redirectUrl);
+  }
 );
 
 /**
