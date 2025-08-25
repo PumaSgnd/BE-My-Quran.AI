@@ -6,13 +6,24 @@ const { Strategy: FacebookStrategy } = require('passport-facebook');
 const { Pool } = require('pg');
 
 // Pool PostgreSQL (pakai ENV yang sudah ada di .env kamu)
-const pool = new Pool({
+let pool;
+
+if (process.env.DATABASE_URL) {
+  // Railway / Supabase / Neon style (public connection string)
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }, // penting buat Vercel
+  });
+} else {
+  // fallback local dev
+  pool = new Pool({
     user: process.env.DB_USER || 'postgres',
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_DATABASE || 'quran_db',
     password: process.env.DB_PASSWORD || 'root',
     port: Number(process.env.DB_PORT || 5432),
-});
+  });
+}
 
 // Buat table users kalau belum ada (sederhana)
 const ensureUsersTable = async () => {
