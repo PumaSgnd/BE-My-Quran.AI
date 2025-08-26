@@ -132,7 +132,4 @@ app.use((err, _req, res, _next) => {
     res.status(status).json({ status: 'Error', message });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
-    console.log(`📄 Docs: http://localhost:${PORT}/docs`);
-});
+module.exports = app;
