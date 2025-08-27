@@ -9,6 +9,10 @@ const AudioFile = require('./audioFile')(sequelize, DataTypes);
 const Transliteration = require('./transliteration')(sequelize, DataTypes);
 const TajwidVerse = require('./tajwidVerse')(sequelize, DataTypes);
 
+const PrayerTimesCache = require('./prayerTimesCache.model')(sequelize, DataTypes);
+const UserPrayerPref = require('./userPrayerPref.model')(sequelize, DataTypes);
+
+
 // Relasi antar tabel
 Ayah.belongsTo(Surah, { foreignKey: 'surah_number', targetKey: 'id' });
 Surah.hasMany(Ayah, { foreignKey: 'surah_number', sourceKey: 'id' });
@@ -33,4 +37,6 @@ module.exports = {
     AudioFile,
     Transliteration,
     TajwidVerse,
+    PrayerTimesCache,
+    UserPrayerPref,
 };
