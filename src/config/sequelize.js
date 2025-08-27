@@ -13,25 +13,17 @@ if (!dbUrl.includes("sslmode")) {
   dbUrl += (dbUrl.includes("?") ? "&" : "?") + "sslmode=require";
 }
 
-const sequelize = new Sequelize(dbUrl, {
+const sequelize = new Sequelize(DATABASE_URL, {
   dialect: 'postgres',
-  logging: false, // set true kalau mau debug query
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 20000,
-    idle: 10000,
-  },
+  logging: false,
+  pool: { max: 5, min: 0, acquire: 20000, idle: 10000 },
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false, // bypass cert self-signed
+      rejectUnauthorized: false,
     },
   },
-  define: {
-    freezeTableName: true,
-    timestamps: false,
-  },
+  define: { freezeTableName: true, timestamps: false },
 });
 
 sequelize.authenticate()
