@@ -11,6 +11,7 @@ const session = require('express-session');
 const passport = require('passport');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
+const path = require('path');
 require('./config/passport-setup');
 
 const swaggerUi = require('swagger-ui-express');
@@ -100,7 +101,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, swaggerUiOptions)
 app.get('/docs.json', (_req, res) => res.json(openapiSpec));
 
 // -------- routes --------
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/surahs', require('./routes/surah.routes.js'));
 app.use('/api/surahs', require('./routes/surahView.routes.js'));
 app.use('/api/juz', require('./routes/juz.routes.js'));
