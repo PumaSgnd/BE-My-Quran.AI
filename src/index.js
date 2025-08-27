@@ -1,6 +1,6 @@
 // src/index.js
 require('dotenv').config();
-require('express-async-errors'); // penting: supaya error di async route ke-catch di Express v4
+require('express-async-errors');
 
 const express = require('express');
 const cors = require('cors');
@@ -17,53 +17,45 @@ const swaggerUi = require('swagger-ui-express');
 const openapiSpec = require('./docs/openapi');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 const isProd = process.env.NODE_ENV === 'production';
 const ORIGINS = (process.env.CORS_ORIGIN || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
 
-// jika di belakang proxy (Vercel/Render/Nginx), aktifkan ini
 app.set('trust proxy', 1);
-app.disable('x-powered-by'); // kecilkan fingerprinting
+app.disable('x-powered-by');
 
-// -------- middlewares umum --------
 app.use(compression());
-
 app.use(cors({
-    origin: ORIGINS.length ? ORIGINS : true, // dev: izinkan semua
+    origin: ORIGINS.length ? ORIGINS : true,
     credentials: true,
 }));
-
 app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// session + passport
 app.use(session({
-    name: 'connect.sid', // sesuaikan dgn components.securitySchemes.cookieAuth
+    name: 'connect.sid',
     secret: process.env.SESSION_SECRET || 'quran-api-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: isProd,                    // wajib true di production (HTTPS)
-        sameSite: isProd ? 'none' : 'lax', // penting untuk OAuth cross-site
-        maxAge: 1000 * 60 * 60 * 24 * 7,   // 7 hari
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
     },
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// rate limiting dasar
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -73,7 +65,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// -------- healthcheck --------
 app.get('/', (_req, res) => {
     res.json({
         message: '🚀 Fondasi Backend Quran API sudah siap!',
@@ -82,8 +73,6 @@ app.get('/', (_req, res) => {
     });
 });
 
-// -------- Swagger Docs --------
-// Penting: include cookie saat Try it out agar endpoint yg protected bekerja setelah login via browser
 const swaggerUiOptions = {
     customSiteTitle: 'Quran API Docs',
     swaggerOptions: {
@@ -100,7 +89,6 @@ const swaggerUiOptions = {
         operationsSorter: 'alpha',
     },
 };
-
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, swaggerUiOptions));
 app.get('/docs.json', (_req, res) => res.json(openapiSpec));
 
@@ -117,17 +105,12 @@ app.use('/api/content', require('./routes/content.routes.js'));
 app.use('/api/learning', require('./routes/learning.routes.js'));
 app.use('/api/tajwid', require('./routes/tajwid.routes.js'));
 
-// -------- 404 & error handler --------
 app.use((_req, res) => {
     res.status(404).json({ status: 'Error', message: 'Resource tidak ditemukan' });
 });
-
-// global error handler (Express 4 style, sudah menangkap async berkat express-async-errors)
 app.use((err, _req, res, _next) => {
-    // kalau rate-limit / validasi kasih status dari error jika ada
     const status = err.status || err.statusCode || 500;
     const message = err.message || 'Terjadi kesalahan pada server';
-    // log stack saat dev
     if (!isProd) console.error(err);
     res.status(status).json({ status: 'Error', message });
 });
