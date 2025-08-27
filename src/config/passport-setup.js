@@ -11,12 +11,13 @@ const ensureUsersTable = async () => {
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        provider TEXT NOT NULL,
-        provider_id TEXT NOT NULL UNIQUE,
-        display_name TEXT NOT NULL,
-        email TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      id SERIAL PRIMARY KEY,
+      provider TEXT NOT NULL,
+      provider_id TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      email TEXT,
+      photo TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
     console.log("✅ users table checked/created");
@@ -54,6 +55,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value || null;
+          const photo = profile.photos?.[0]?.value || null;
           const result = await db.query(
             "SELECT * FROM users WHERE provider = $1 AND provider_id = $2",
             ["google", profile.id]
@@ -64,8 +66,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           }
 
           const insert = await db.query(
-            "INSERT INTO users (provider, provider_id, display_name, email) VALUES ($1,$2,$3,$4) RETURNING *",
-            ["google", profile.id, profile.displayName, email]
+            "INSERT INTO users (provider, provider_id, display_name, email, photo) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+            ["google", profile.id, profile.displayName, email, photo]
           );
 
           return done(null, insert.rows[0]);
@@ -95,6 +97,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value || null;
+          const photo = profile.photos?.[0]?.value || null;
           const result = await db.query(
             "SELECT * FROM users WHERE provider = $1 AND provider_id = $2",
             ["facebook", profile.id]
@@ -105,8 +108,8 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
           }
 
           const insert = await db.query(
-            "INSERT INTO users (provider, provider_id, display_name, email) VALUES ($1,$2,$3,$4) RETURNING *",
-            ["facebook", profile.id, profile.displayName, email]
+            "INSERT INTO users (provider, provider_id, display_name, email, photo) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+            ["facebook", profile.id, profile.displayName, email, photo]
           );
 
           return done(null, insert.rows[0]);

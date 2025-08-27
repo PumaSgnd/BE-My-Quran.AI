@@ -16,15 +16,13 @@ router.get('/google/callback',
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
+        photo: req.user.photo
       },
-      process.env.JWT_SECRET || 'default_secret',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET || "default_secret",
+      { expiresIn: "7d" }
     );
 
-    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(
-      req.user.display_name
-    )}&email=${encodeURIComponent(req.user.email || '')}`;
-
+    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}`;
     res.redirect(redirectUrl);
   }
 );
@@ -42,14 +40,13 @@ router.get('/facebook/callback',
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
+        photo: req.user.photo
       },
-      process.env.JWT_SECRET || 'default_secret',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET || "default_secret",
+      { expiresIn: "7d" }
     );
 
-    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(
-      req.user.display_name
-    )}&email=${encodeURIComponent(req.user.email || '')}`;
+    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}`;
 
     res.redirect(redirectUrl);
   }
