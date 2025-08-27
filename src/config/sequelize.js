@@ -7,16 +7,35 @@ if (!DATABASE_URL) {
   throw new Error("❌ DATABASE_URL belum diset di environment!");
 }
 
-const sequelize = new Sequelize(DATABASE_URL, {
+// Tambahin sslmode di URL kalau belum ada (Railway butuh SSL)
+let dbUrl = DATABASE_URL;
+if (!dbUrl.includes("sslmode")) {
+  dbUrl += (dbUrl.includes("?") ? "&" : "?") + "sslmode=require";
+}
+
+const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
-  logging: false,
-  pool: { max: 5, min: 0, acquire: 20000, idle: 10000 },
-  dialectOptions: {
-    ssl: { require: true, rejectUnauthorized: false }, // penting di Railway/Supabase
+  logging: false, // set true kalau mau debug query
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 20000,
+    idle: 10000,
   },
-  define: { freezeTableName: true, timestamps: false },
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // bypass cert self-signed
+    },
+  },
+  define: {
+    freezeTableName: true,
+    timestamps: false,
+  },
 });
 
-console.log('✅ Sequelize pakai DATABASE_URL');
+sequelize.authenticate()
+  .then(() => console.log("✅ Koneksi database berhasil"))
+  .catch((err) => console.error("❌ Gagal konek DB:", err.message));
 
 module.exports = sequelize;
