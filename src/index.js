@@ -57,11 +57,18 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: 'Terlalu banyak request, coba lagi dalam 15 menit',
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Terlalu banyak request, coba lagi dalam 15 menit',
+  keyGenerator: (req) => {
+    // Ambil IP pertama dari x-forwarded-for, fallback ke remoteAddress, terakhir ke loopback
+    if (req.headers['x-forwarded-for']) {
+      return req.headers['x-forwarded-for'].split(',')[0].trim();
+    }
+    return req.socket?.remoteAddress || '127.0.0.1';
+  },
 });
 app.use(limiter);
 
