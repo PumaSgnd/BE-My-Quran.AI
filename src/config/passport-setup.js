@@ -2,23 +2,14 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const FacebookStrategy = require("passport-facebook").Strategy;
-const { Pool } = require("pg");
+const db = require("./db"); // ✅ pakai koneksi tunggal
 
 console.log("🚀 passport-setup.js loaded");
-
-// --- Database Pool ---
-if (!process.env.DATABASE_URL) {
-  console.error("❌ DATABASE_URL belum diset di environment!");
-}
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Vercel PostgreSQL butuh SSL
-});
 
 // --- Ensure users table ---
 const ensureUsersTable = async () => {
   try {
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         provider TEXT NOT NULL,
@@ -42,7 +33,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    const result = await db.query("SELECT * FROM users WHERE id = $1", [id]);
     done(null, result.rows[0]);
   } catch (err) {
     done(err, null);
@@ -63,7 +54,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value || null;
-          const result = await pool.query(
+          const result = await db.query(
             "SELECT * FROM users WHERE provider = $1 AND provider_id = $2",
             ["google", profile.id]
           );
@@ -72,7 +63,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             return done(null, result.rows[0]);
           }
 
-          const insert = await pool.query(
+          const insert = await db.query(
             "INSERT INTO users (provider, provider_id, display_name, email) VALUES ($1,$2,$3,$4) RETURNING *",
             ["google", profile.id, profile.displayName, email]
           );
@@ -104,7 +95,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value || null;
-          const result = await pool.query(
+          const result = await db.query(
             "SELECT * FROM users WHERE provider = $1 AND provider_id = $2",
             ["facebook", profile.id]
           );
@@ -113,7 +104,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
             return done(null, result.rows[0]);
           }
 
-          const insert = await pool.query(
+          const insert = await db.query(
             "INSERT INTO users (provider, provider_id, display_name, email) VALUES ($1,$2,$3,$4) RETURNING *",
             ["facebook", profile.id, profile.displayName, email]
           );
