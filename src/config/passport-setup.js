@@ -92,7 +92,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
         callbackURL:
           process.env.FACEBOOK_CALLBACK_URL ||
           "https://be-my-quran-ai.vercel.app/api/auth/facebook/callback",
-        profileFields: ["id", "displayName", "emails"],
+        profileFields: ["id", "displayName", "emails", "photos"],
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
