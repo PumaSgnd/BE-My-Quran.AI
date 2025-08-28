@@ -29,11 +29,11 @@ router.get('/google/callback',
 
 // ===== FACEBOOK LOGIN =====
 router.get('/facebook',
-  passport.authenticate('facebook', { scope: ['email'], session: false })
+  passport.authenticate('facebook', { scope: ['public_profile', 'email'], session: false })
 );
 
 router.get('/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/api/auth/profile', session: false }),
+  passport.authenticate('facebook', { failureRedirect: 'myquranai://auth/failed', session: false }),
   (req, res) => {
     const token = jwt.sign(
       {
