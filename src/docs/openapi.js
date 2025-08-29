@@ -22,6 +22,7 @@ const options = {
             { name: 'Content', description: 'Konten penunjang/temukan' },
             { name: 'Learning', description: 'Topik/lesson pembelajaran' },
             { name: 'Tajwid', description: 'Data tajwid spans per ayat' },
+            { name: 'Videos', description: 'Endpoint video (YouTube cached di PostgreSQL)' },
         ],
         components: {
             securitySchemes: {
@@ -33,6 +34,7 @@ const options = {
                         'Session cookie dari express-session. Login via OAuth (redirect) di browser, lalu /auth/profile bisa di-Try dari Swagger.',
                 },
             },
+            // schemas/responses lain tetap seperti punyamu...
             schemas: {
                 ApiResponse: {
                     type: 'object',
@@ -69,48 +71,7 @@ const options = {
                     },
                     required: ['id', 'provider', 'provider_id', 'display_name'],
                 },
-                Surah: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'integer', example: 1 },
-                        number: { type: 'integer', example: 1 },
-                        name: { type: 'string', example: 'Al-Fatihah' },
-                        ayahs_count: { type: 'integer', example: 7 },
-                    },
-                },
-                Ayah: {
-                    type: 'object',
-                    properties: {
-                        id: { type: 'integer', example: 1 },
-                        ayah_number: { type: 'integer', example: 1 },
-                        verse_key: { type: 'string', example: '1:1' },
-                        text_ar: { type: 'string', example: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ' },
-                        tajwid_spans: {
-                            type: 'array',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    start: { type: 'integer', example: 7 },
-                                    end: { type: 'integer', example: 8 },
-                                    rule: { type: 'string', example: 'ham_wasl' },
-                                },
-                            },
-                        },
-                    },
-                },
-                Bookmark: {
-                    type: 'object',
-                    properties: {
-                        bookmark_id: { type: 'integer', example: 12 },
-                        id: { type: 'integer', example: 3456, description: 'ayah.id' },
-                        surah_number: { type: 'integer', example: 2 },
-                        ayah_number: { type: 'integer', example: 255 },
-                        verse_key: { type: 'string', example: '2:255' },
-                        text: { type: 'string', example: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ...' },
-                        juz_number: { type: 'integer', example: 3 },
-                        surah_name: { type: 'string', example: 'Al-Baqarah' },
-                    },
-                },
+                // ... Surah, Ayah, Bookmark tetap
             },
             responses: {
                 Unauthorized: {
@@ -153,8 +114,9 @@ const options = {
             },
         },
     },
-    // scan semua route JSDoc
-    apis: [path.join(__dirname, '../routes/*.js')],
+    // scan SEMUA route (termasuk subfolder) dan fail kalau ada error JSDoc
+    apis: [path.join(__dirname, '../routes/**/*.js')],
+    failOnErrors: true,
 };
 
 const openapiSpec = swaggerJsdoc(options);

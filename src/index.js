@@ -117,6 +117,8 @@ app.use('/api/content', require('./routes/content.routes.js'));
 app.use('/api/learning', require('./routes/learning.routes.js'));
 app.use('/api/tajwid', require('./routes/tajwid.routes.js'));
 app.use('/api/prayer', require('./routes/prayer.routes'));
+app.use('/api/videos', require('./routes/video.routes'));
+
 
 // -------- 404 & error handler --------
 app.use((_req, res) => {

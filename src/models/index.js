@@ -2,6 +2,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
+// ==== MODELS YANG SUDAH ADA ====
 const Ayah = require('./ayah')(sequelize, DataTypes);
 const Surah = require('./surah')(sequelize, DataTypes);
 const Translation = require('./translation')(sequelize, DataTypes);
@@ -12,8 +13,12 @@ const TajwidVerse = require('./tajwidVerse')(sequelize, DataTypes);
 const PrayerTimesCache = require('./prayerTimesCache.model')(sequelize, DataTypes);
 const UserPrayerPref = require('./userPrayerPref.model')(sequelize, DataTypes);
 
+// ==== MODELS BARU: VIDEO & CHANNEL ====
+const Channel = require('./channel.model')(sequelize, DataTypes); // pastikan file: src/models/channel.model.js
+const Video = require('./video.model')(sequelize, DataTypes);   // pastikan file: src/models/video.model.js
 
-// Relasi antar tabel
+// =================== RELASI =================== //
+// -- Relasi lama --
 Ayah.belongsTo(Surah, { foreignKey: 'surah_number', targetKey: 'id' });
 Surah.hasMany(Ayah, { foreignKey: 'surah_number', sourceKey: 'id' });
 
@@ -29,8 +34,15 @@ Transliteration.belongsTo(Ayah, { foreignKey: 'ayah_id', targetKey: 'id' });
 Ayah.hasOne(TajwidVerse, { foreignKey: 'ayah_id', sourceKey: 'id' });
 TajwidVerse.belongsTo(Ayah, { foreignKey: 'ayah_id', targetKey: 'id' });
 
+// -- Relasi baru untuk fitur Video --
+Channel.hasMany(Video, { foreignKey: 'channel_id' });
+Video.belongsTo(Channel, { foreignKey: 'channel_id' });
+
+// =================== EXPORT =================== //
 module.exports = {
     sequelize,
+
+    // existing
     Ayah,
     Surah,
     Translation,
@@ -39,4 +51,8 @@ module.exports = {
     TajwidVerse,
     PrayerTimesCache,
     UserPrayerPref,
+
+    // new
+    Channel,
+    Video,
 };
