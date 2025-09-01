@@ -10,9 +10,11 @@ const options = {
             version: '1.0.0',
             description: 'Dokumentasi endpoint untuk FE (Quran App)',
         },
+        // Base path untuk semua path JSDoc
         servers: [{ url: '/api', description: 'Base API' }],
         tags: [
             { name: 'Auth', description: 'OAuth (redirect), session cookie, profile & logout' },
+            { name: 'Profile', description: 'Ambil & update profil user (butuh login)' }, // <— ditambahkan
             { name: 'Surah', description: 'Daftar surah & ayat' },
             { name: 'Juz', description: 'Daftar juz & ayat per juz' },
             { name: 'Reciters', description: 'Qari & audio per surah' },
@@ -31,10 +33,9 @@ const options = {
                     in: 'cookie',
                     name: 'connect.sid',
                     description:
-                        'Session cookie dari express-session. Login via OAuth (redirect) di browser, lalu /auth/profile bisa di-Try dari Swagger.',
+                        'Session cookie dari express-session. Login via OAuth (redirect) di browser, lalu endpoint yang protected bisa di-Try dari Swagger.',
                 },
             },
-            // schemas/responses lain tetap seperti punyamu...
             schemas: {
                 ApiResponse: {
                     type: 'object',
@@ -67,11 +68,12 @@ const options = {
                         provider_id: { type: 'string', example: '108032807703254427138' },
                         display_name: { type: 'string', example: 'Surya' },
                         email: { type: 'string', nullable: true, example: 'suryanurjaman91@gmail.com' },
+                        photo: { type: 'string', nullable: true, example: 'https://i.pravatar.cc/300?u=surya' }, // <— ditambahkan
                         created_at: { type: 'string', format: 'date-time' },
                     },
                     required: ['id', 'provider', 'provider_id', 'display_name'],
                 },
-                // ... Surah, Ayah, Bookmark tetap
+                // ... schema lain (Surah, Ayah, Bookmark, dsb) tetap milikmu
             },
             responses: {
                 Unauthorized: {
@@ -79,7 +81,9 @@ const options = {
                     content: {
                         'application/json': {
                             schema: { $ref: '#/components/schemas/ErrorResponse' },
-                            examples: { e: { value: { status: 'error', message: 'Tidak ada user yang login' } } },
+                            examples: {
+                                e: { value: { status: 'error', message: 'Tidak ada user yang login' } },
+                            },
                         },
                     },
                 },
@@ -103,18 +107,14 @@ const options = {
                 },
                 InternalServerError: {
                     description: 'Kesalahan server',
-                    content: {
-                        'application/json': {
-                            schema: { $ref: '#/components/schemas/ErrorResponse' },
-                        },
-                    },
+                    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
                 },
                 RedirectToProvider: { description: 'Redirect ke halaman OAuth Provider (302)' },
                 RedirectToProfile: { description: 'Redirect ke /api/auth/profile (302)' },
             },
         },
     },
-    // scan SEMUA route (termasuk subfolder) dan fail kalau ada error JSDoc
+    // scan semua route untuk JSDoc
     apis: [path.join(__dirname, '../routes/**/*.js')],
     failOnErrors: true,
 };
