@@ -11,19 +11,20 @@ router.get('/google',
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/api/auth/profile', session: false }),
   (req, res) => {
+    const createdAt = new Date().toISOString();
     const token = jwt.sign(
       {
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
         photo: req.user.photo,
-        created_at: new Date().toISOString()
+        created_at: createdAt,
       },
       process.env.JWT_SECRET || "default_secret",
       { expiresIn: "7d" }
     );
 
-    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}`;
+    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}&created_at=${encodeURIComponent(createdAt)}`;
     res.redirect(redirectUrl);
   }
 );
@@ -36,19 +37,20 @@ router.get('/facebook',
 router.get('/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: 'myquranai://auth/failed', session: false }),
   (req, res) => {
+    const createdAt = new Date().toISOString();
     const token = jwt.sign(
       {
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
         photo: req.user.photo,
-        created_at: new Date().toISOString()
+        created_at: createdAt,
       },
       process.env.JWT_SECRET || "default_secret",
       { expiresIn: "7d" }
     );
 
-    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}`;
+    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}&created_at=${encodeURIComponent(createdAt)}`;
 
     res.redirect(redirectUrl);
   }
