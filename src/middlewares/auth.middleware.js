@@ -1,7 +1,18 @@
 const jwt = require("jsonwebtoken");
 
 const isLoggedIn = (req, res, next) => {
-  const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+  console.log(">>> Incoming headers:", req.headers); // debug
+
+  // Cari header Authorization tanpa case-sensitive
+  const authHeader =
+    req.headers["authorization"] ||
+    req.headers["Authorization"] ||
+    Object.keys(req.headers)
+      .find((k) => k.toLowerCase() === "authorization")
+      ?.let((k) => req.headers[k]);
+
+  console.log(">>> Parsed authHeader:", authHeader);
+
   if (!authHeader) {
     return res.status(401).json({
       status: "error",
@@ -19,17 +30,9 @@ const isLoggedIn = (req, res, next) => {
   }
 
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      console.error("JWT_SECRET is not set!");
-      return res.status(500).json({
-        status: "error",
-        message: "Server configuration error",
-      });
-    }
-
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    console.log(">>> JWT verified:", decoded);
     next();
   } catch (err) {
     console.error("JWT verify error:", err.message);
