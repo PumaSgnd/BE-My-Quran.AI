@@ -9,9 +9,16 @@ const updateProfileRules = [
         .withMessage('display_name harus 1-100 karakter'),
     body('photo')
         .optional({ nullable: true })
-        .trim()
-        .isURL()
-        .withMessage('photo harus berupa URL yang valid'),
+        .custom((value, { req }) => {
+            if (req.file) return true; // kalau upload file, skip URL check
+            if (!value) return true; // kosong boleh
+            try {
+                new URL(value); // kalau pakai URL, harus valid
+                return true;
+            } catch {
+                throw new Error('photo harus berupa URL atau file PNG/JPG');
+            }
+        }),
 ];
 
 module.exports = { updateProfileRules };

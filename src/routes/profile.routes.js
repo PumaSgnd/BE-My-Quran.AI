@@ -4,6 +4,7 @@ const router = express.Router();
 
 const { isLoggedIn } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validate');
+const { upload } = require('../middlewares/upload.middleware');
 const { updateProfileRules } = require('../validators/profile.validator');
 const { getMyProfile, updateMyProfile } = require('../controllers/profile.controller');
 
@@ -77,6 +78,6 @@ const { getMyProfile, updateMyProfile } = require('../controllers/profile.contro
 router.get('/me', isLoggedIn, getMyProfile);
 
 // PUT /api/profile -> update display_name &/ photo
-router.put('/', isLoggedIn, validate(updateProfileRules), updateMyProfile);
+router.put('/', isLoggedIn, upload.single('photo'), validate(updateProfileRules), updateMyProfile);
 
 module.exports = router;

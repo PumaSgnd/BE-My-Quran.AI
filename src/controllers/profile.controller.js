@@ -15,6 +15,14 @@ exports.getMyProfile = async (req, res, next) => {
 
 exports.updateMyProfile = async (req, res, next) => {
     try {
+        let photoUrl = req.body.photo; // default dari Google/Facebook
+
+        if (req.file) {
+            // encode file menjadi base64 untuk disimpan di DB
+            const base64 = req.file.buffer.toString('base64');
+            photoUrl = `data:${req.file.mimetype};base64,${base64}`;
+        }
+
         const payload = {
             display_name: req.body.display_name,
             photo: req.body.photo,
