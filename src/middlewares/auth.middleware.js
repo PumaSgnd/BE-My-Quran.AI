@@ -1,18 +1,16 @@
 const jwt = require("jsonwebtoken");
 
 const isLoggedIn = (req, res, next) => {
-  console.log(">>> Incoming headers:", req.headers); // debug
+  // Debug: lihat headers yang masuk
+  console.log(">>> Incoming headers:", req.headers);
 
-  // Cari header Authorization tanpa case-sensitive
-  const authHeader =
+  // Cek header: Authorization atau x-access-token
+  let authHeader =
     req.headers["authorization"] ||
     req.headers["Authorization"] ||
-    Object.keys(req.headers)
-      .find((k) => k.toLowerCase() === "authorization")
-      ?.let((k) => req.headers[k]);
+    req.headers["x-access-token"];
 
-  console.log(">>> Parsed authHeader:", authHeader);
-
+  // Jika tidak ada token
   if (!authHeader) {
     return res.status(401).json({
       status: "error",
@@ -20,7 +18,10 @@ const isLoggedIn = (req, res, next) => {
     });
   }
 
-  const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+  // Ambil token tanpa "Bearer " prefix
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : authHeader;
 
   if (!token) {
     return res.status(401).json({
