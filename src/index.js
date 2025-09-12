@@ -114,6 +114,8 @@ app.use('/api/content', require('./routes/content.routes.js'));
 app.use('/api/learning', require('./routes/learning.routes.js'));
 app.use('/api/tajwid', require('./routes/tajwid.routes.js'));
 
+app.use('/api/profile', require('./routes/profile.routes.js'));
+
 app.use((_req, res) => {
     res.status(404).json({ status: 'Error', message: 'Resource tidak ditemukan' });
 });
