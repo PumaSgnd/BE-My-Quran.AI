@@ -25,7 +25,7 @@ exports.updateMyProfile = async (req, res, next) => {
 
         const payload = {
             display_name: req.body.display_name,
-            photo: req.body.photo,
+            photo: photoUrl,
         };
 
         const updated = await updateMe(req.user.id, payload);
