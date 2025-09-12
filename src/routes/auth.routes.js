@@ -16,7 +16,8 @@ router.get('/google/callback',
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
-        photo: req.user.photo
+        photo: req.user.photo,
+        created_at: new Date().toISOString()
       },
       process.env.JWT_SECRET || "default_secret",
       { expiresIn: "7d" }
@@ -40,7 +41,8 @@ router.get('/facebook/callback',
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
-        photo: req.user.photo
+        photo: req.user.photo,
+        created_at: new Date().toISOString()
       },
       process.env.JWT_SECRET || "default_secret",
       { expiresIn: "7d" }
