@@ -1,7 +1,6 @@
-// src/middlewares/upload.middleware.js
 const multer = require('multer');
 
-const storage = multer.memoryStorage(); // pakai memoryStorage karena Vercel
+const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/png', 'image/jpeg'];
   if (allowedTypes.includes(file.mimetype)) {
@@ -17,4 +16,4 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // max 5MB
 });
 
-module.exports = upload;
+module.exports = { upload };
