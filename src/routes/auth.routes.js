@@ -20,7 +20,7 @@ router.get('/google/callback',
           email: req.user.email,
           name: req.user.display_name,
           photo: req.user.photo,
-          created_at: req.user.created_at,
+          created_at: req.user.created_at || req.user.updated_at || new Date().toISOString(),
         },
         process.env.JWT_SECRET || "default_secret",
         { expiresIn: "7d" }
@@ -43,22 +43,28 @@ router.get('/facebook',
 router.get('/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: 'myquranai://auth/failed', session: false }),
   (req, res) => {
-    const createdAt = new Date().toISOString();
-    const token = jwt.sign(
-      {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.display_name,
-        photo: req.user.photo,
-        created_at: createdAt,
-      },
-      process.env.JWT_SECRET || "default_secret",
-      { expiresIn: "7d" }
-    );
-
-    const redirectUrl = `myquranai://auth/success?token=${token}`;
-
-    res.redirect(redirectUrl);
+    // const createdAt = new Date().toISOString();
+    console.log("DEBUG req.user =", req.user);
+    
+    try{
+      const token = jwt.sign(
+        {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.display_name,
+          photo: req.user.photo,
+          // created_at: createdAt,
+          created_at: req.user.created_at || req.user.updated_at || new Date().toISOString(),
+        },
+        process.env.JWT_SECRET || "default_secret",
+        { expiresIn: "7d" }
+      );
+      const redirectUrl = `myquranai://auth/success?token=${token}`;
+      res.redirect(redirectUrl);
+    } catch (err) {
+      console.error("JWT error:", err);
+      res.status(500).json({ status: "error", message: "Gagal bikin token" });
+    }
   }
 );
 
