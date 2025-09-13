@@ -24,7 +24,7 @@ router.get('/google/callback',
       { expiresIn: "7d" }
     );
 
-    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}&created_at=${encodeURIComponent(createdAt)}`;
+    const redirectUrl = `myquranai://auth/success?token=${token}`;
     res.redirect(redirectUrl);
   }
 );
@@ -50,7 +50,7 @@ router.get('/facebook/callback',
       { expiresIn: "7d" }
     );
 
-    const redirectUrl = `myquranai://auth/success?token=${token}&name=${encodeURIComponent(req.user.display_name)}&email=${encodeURIComponent(req.user.email || '')}&photo=${encodeURIComponent(req.user.photo || '')}&created_at=${encodeURIComponent(createdAt)}`;
+    const redirectUrl = `myquranai://auth/success?token=${token}`;
 
     res.redirect(redirectUrl);
   }
