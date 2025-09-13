@@ -10,13 +10,18 @@ const updateProfileRules = [
     body('photo')
         .optional({ nullable: true })
         .custom((value, { req }) => {
-            if (req.file) return true; // kalau upload file, skip URL check
-            if (!value) return true; // kosong boleh
+            if (req.file) return true; // kalau upload file
+            if (!value) return true;   // boleh kosong
+
+            // Kalau base64 data URI
+            if (value.startsWith("data:image/")) return true;
+
+            // Kalau URL biasa
             try {
-                new URL(value); // kalau pakai URL, harus valid
+                new URL(value);
                 return true;
             } catch {
-                throw new Error('photo harus berupa URL atau file PNG/JPG');
+                throw new Error("photo harus berupa URL, Base64, atau file PNG/JPG");
             }
         }),
 ];

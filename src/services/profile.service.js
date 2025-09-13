@@ -38,6 +38,10 @@ async function updateMe(userId, { display_name, photo }) {
   `;
   params.push(userId);
 
+  console.log("updateMe payload =", { display_name, photo });
+  console.log("updateMe SQL =", sql);
+  console.log("updateMe params =", params);
+
   const { rows } = await db.query(sql, params);
   return rows[0] || null;
 }
