@@ -11,7 +11,7 @@ router.get('/google',
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/api/auth/profile', session: false }),
   (req, res) => {
-    console.log("DEBUG req.user =", req.user); // ⬅️ cek isi user setelah edit
+    console.log("DEBUG req.user =", req.user);
 
     try {
       const token = jwt.sign(
@@ -19,7 +19,6 @@ router.get('/google/callback',
           id: req.user.id,
           email: req.user.email,
           name: req.user.display_name,
-          photo: req.user.photo,
           created_at: req.user.created_at || req.user.updated_at || new Date().toISOString(),
         },
         process.env.JWT_SECRET || "default_secret",
