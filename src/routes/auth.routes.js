@@ -11,20 +11,27 @@ router.get('/google',
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/api/auth/profile', session: false }),
   (req, res) => {
-    const token = jwt.sign(
-      {
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.display_name,
-        photo: req.user.photo,
-        created_at: req.user.created_at,
-      },
-      process.env.JWT_SECRET || "default_secret",
-      { expiresIn: "7d" }
-    );
+    console.log("DEBUG req.user =", req.user); // ⬅️ cek isi user setelah edit
 
-    const redirectUrl = `myquranai://auth/success?token=${token}`;
-    res.redirect(redirectUrl);
+    try {
+      const token = jwt.sign(
+        {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.display_name,
+          photo: req.user.photo,
+          created_at: req.user.created_at,
+        },
+        process.env.JWT_SECRET || "default_secret",
+        { expiresIn: "7d" }
+      );
+
+      const redirectUrl = `myquranai://auth/success?token=${token}`;
+      res.redirect(redirectUrl);
+    } catch (err) {
+      console.error("JWT error:", err);
+      res.status(500).json({ status: "error", message: "Gagal bikin token" });
+    }
   }
 );
 
