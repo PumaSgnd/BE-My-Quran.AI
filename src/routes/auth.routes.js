@@ -11,14 +11,13 @@ router.get('/google',
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/api/auth/profile', session: false }),
   (req, res) => {
-    const createdAt = new Date().toISOString();
     const token = jwt.sign(
       {
         id: req.user.id,
         email: req.user.email,
         name: req.user.display_name,
         photo: req.user.photo,
-        created_at: createdAt,
+        created_at: req.user.created_at,
       },
       process.env.JWT_SECRET || "default_secret",
       { expiresIn: "7d" }
