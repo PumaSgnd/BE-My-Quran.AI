@@ -31,6 +31,8 @@ app.use(compression());
 app.use(cors({
     origin: ORIGINS.length ? ORIGINS : true,
     credentials: true,
+    allowedHeaders: ["Authorization", "Content-Type", "X-Requested-With"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 }));
 app.use(helmet({
     contentSecurityPolicy: false,
