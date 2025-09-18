@@ -17,6 +17,17 @@ const UserPrayerPref = require('./userPrayerPref.model')(sequelize, DataTypes);
 const Channel = require('./channel.model')(sequelize, DataTypes); // pastikan file: src/models/channel.model.js
 const Video = require('./video.model')(sequelize, DataTypes);   // pastikan file: src/models/video.model.js
 
+// ==== MODELS BARU: MISI & WALLET ====
+const Mission = require('./Mission')(sequelize, DataTypes);
+const MissionPeriod = require('./MissionPeriod')(sequelize, DataTypes);
+const UserMissionProgress = require('./UserMissionProgress')(sequelize, DataTypes);
+const UserMissionEvent = require('./UserMissionEvent')(sequelize, DataTypes);
+const UserDailyCheckin = require('./UserDailyCheckin')(sequelize, DataTypes);
+const UserWallet = require('./UserWallet')(sequelize, DataTypes);
+const RewardLedger = require('./RewardLedger')(sequelize, DataTypes);
+const IdempotencyKey = require('./IdempotencyKey')(sequelize, DataTypes);
+const ActivitySession = require('./ActivitySession')(sequelize, DataTypes);
+
 // =================== RELASI =================== //
 // -- Relasi lama --
 Ayah.belongsTo(Surah, { foreignKey: 'surah_number', targetKey: 'id' });
@@ -38,6 +49,12 @@ TajwidVerse.belongsTo(Ayah, { foreignKey: 'ayah_id', targetKey: 'id' });
 Channel.hasMany(Video, { foreignKey: 'channel_id' });
 Video.belongsTo(Channel, { foreignKey: 'channel_id' });
 
+// -- Relasi baru untuk Misi --
+Mission.hasMany(MissionPeriod, { foreignKey: 'mission_id' });
+MissionPeriod.belongsTo(Mission, { foreignKey: 'mission_id' });
+
+MissionPeriod.hasMany(UserMissionProgress, { foreignKey: 'mission_period_id' });
+UserMissionProgress.belongsTo(MissionPeriod, { foreignKey: 'mission_period_id' });
 // =================== EXPORT =================== //
 module.exports = {
     sequelize,
@@ -55,4 +72,15 @@ module.exports = {
     // new
     Channel,
     Video,
+
+    // new missions
+    Mission,
+    MissionPeriod,
+    UserMissionProgress,
+    UserMissionEvent,
+    UserDailyCheckin,
+    UserWallet,
+    RewardLedger,
+    IdempotencyKey,
+    ActivitySession
 };

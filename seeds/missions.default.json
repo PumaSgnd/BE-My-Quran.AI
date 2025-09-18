@@ -1,0 +1,119 @@
+[
+    {
+        "code": "daily_checkin_28d",
+        "title": "Check-in Harian",
+        "description": "Masuk setiap hari untuk dapat Bintang. Bonus di hari 7/14/21/28.",
+        "type": "checkin",
+        "period": "daily",
+        "target_value": 1,
+        "base_reward": 10,
+        "milestone_rules": {
+            "cycleDays": 28,
+            "dayRewards": {
+                "1": 10,
+                "2": 10,
+                "3": 15,
+                "4": 20,
+                "5": 20,
+                "6": 30,
+                "7": 150,
+                "8": 10,
+                "9": 10,
+                "10": 15,
+                "11": 20,
+                "12": 25,
+                "13": 30,
+                "14": 200,
+                "15": 10,
+                "16": 10,
+                "17": 15,
+                "18": 20,
+                "19": 25,
+                "20": 30,
+                "21": 250,
+                "22": 10,
+                "23": 10,
+                "24": 15,
+                "25": 20,
+                "26": 25,
+                "27": 30,
+                "28": 300
+            },
+            "milestones": [
+                7,
+                14,
+                21,
+                28
+            ]
+        },
+        "is_active": true
+    },
+    {
+        "code": "daily_read_10_verses",
+        "title": "Baca 10 Ayat",
+        "description": "Capai 10 ayat valid per hari.",
+        "type": "counter",
+        "period": "daily",
+        "target_value": 10,
+        "base_reward": 20,
+        "milestone_rules": null,
+        "is_active": true
+    },
+    {
+        "code": "daily_listen_5_minutes",
+        "title": "Dengar Tilawah 5 Menit",
+        "description": "Dengarkan audio tilawah minimal 5 menit.",
+        "type": "counter",
+        "period": "daily",
+        "target_value": 300,
+        "base_reward": 15,
+        "milestone_rules": null,
+        "is_active": true
+    },
+    {
+        "code": "daily_watch_video_1",
+        "title": "Tonton 1 Video",
+        "description": "Selesaikan menonton 1 video kajian.",
+        "type": "counter",
+        "period": "daily",
+        "target_value": 1,
+        "base_reward": 10,
+        "milestone_rules": null,
+        "is_active": true
+    },
+    {
+        "code": "daily_watch_ad_1",
+        "title": "Tonton Iklan Berhadiah",
+        "description": "Menonton 1 iklan berhadiah selesai.",
+        "type": "counter",
+        "period": "daily",
+        "target_value": 1,
+        "base_reward": 8,
+        "milestone_rules": {
+            "dailyLimit": 3
+        },
+        "is_active": true
+    },
+    {
+        "code": "weekly_read_100_verses",
+        "title": "Baca 100 Ayat (Mingguan)",
+        "description": "Kumpulkan 100 ayat selama minggu ini.",
+        "type": "counter",
+        "period": "weekly",
+        "target_value": 100,
+        "base_reward": 70,
+        "milestone_rules": null,
+        "is_active": true
+    },
+    {
+        "code": "weekly_listen_30_minutes",
+        "title": "Dengar 30 Menit (Mingguan)",
+        "description": "Dengarkan tilawah total 30 menit.",
+        "type": "counter",
+        "period": "weekly",
+        "target_value": 1800,
+        "base_reward": 80,
+        "milestone_rules": null,
+        "is_active": true
+    }
+]
