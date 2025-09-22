@@ -4,13 +4,13 @@ const sequelize = require('../config/sequelize');
 const Video = require('../models/video.model');
 const Channel = require('../models/channel.model');
 
-const YT_API_KEY = process.env.YOUTUBE_API_KEY;
+const API_KEY = process.env.YOUTUBE_API_KEY;
 const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 
 async function fetchLatestVideoIdsByChannel(channelId, maxResults = 25) {
     const { data } = await axios.get(`${YT_BASE}/search`, {
         params: {
-            key: YT_API_KEY,
+            key: API_KEY,
             part: 'id',
             channelId,
             maxResults,
@@ -25,7 +25,7 @@ async function fetchVideoDetails(ids) {
     if (!ids.length) return [];
     const { data } = await axios.get(`${YT_BASE}/videos`, {
         params: {
-            key: YT_API_KEY,
+            key: API_KEY,
             part: 'snippet,contentDetails,statistics',
             id: ids.join(','),
             maxResults: ids.length,
