@@ -1,27 +1,26 @@
-// src/controllers/video.controller.js
 const { Op } = require('sequelize');
 const Video = require('../models/video.model');
 const Channel = require('../models/channel.model');
 const { syncAllActiveChannels } = require('../services/youtube.service');
 
 const mapVideo = (v) => ({
-    id: v.id,
-    youtube_video_id: v.youtube_video_id,
-    title: v.title,
-    description: v.description,
-    thumbnails: v.thumbnails_json || {},
-    published_at: v.published_at,
-    duration_iso: v.duration_iso,
-    stats: {
-        view_count: Number(v.view_count || 0),
-        like_count: Number(v.like_count || 0),
-        comment_count: Number(v.comment_count || 0),
-    },
-    channel: v.Channel ? { id: v.Channel.id, name: v.Channel.name } : null,
-    embed_url: `https://www.youtube.com/embed/${v.youtube_video_id}`,
+  id: v.id,
+  youtube_video_id: v.youtube_video_id,
+  title: v.title,
+  description: v.description,
+  thumbnails: v.thumbnails_json || {},
+  published_at: v.published_at,
+  duration_iso: v.duration_iso,
+  stats: {
+    view_count: Number(v.view_count || 0),
+    like_count: Number(v.like_count || 0),
+    comment_count: Number(v.comment_count || 0),
+  },
+  channel: v.Channel ? { id: v.Channel.id, name: v.Channel.name } : null,
+  embed_url: `https://www.youtube.com/embed/${v.youtube_video_id}`,
 });
 
-exports.listVideos = async (req, res, next) => {
+const listVideos = async (req, res, next) => {
   try {
     const { page = 1, limit = 12, channel, q, category } = req.query;
 
@@ -55,7 +54,7 @@ exports.listVideos = async (req, res, next) => {
   }
 };
 
-exports.updateCategory = async (req, res, next) => {
+const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { category } = req.body;
@@ -72,30 +71,28 @@ exports.updateCategory = async (req, res, next) => {
   }
 };
 
-exports.syncNow = async (req, res, next) => {
-    try {
-        const result = await syncAllActiveChannels();
-        res.json({ status: 'success', synced: result });
-    } catch (err) {
-        next(err);
-    }
+const syncNow = async (req, res, next) => {
+  try {
+    const result = await syncAllActiveChannels();
+    res.json({ status: 'success', synced: result });
+  } catch (err) {
+    next(err);
+  }
 };
 
-async function getVideos(req, res) {
+const getVideos = async (req, res) => {
   try {
     const { category } = req.query;
     const where = {};
-
     if (category && category !== 'Semua') {
       where.category = category;
     }
-
     const videos = await Video.findAll({ where });
     res.json({ status: 'success', data: videos });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
-}
+};
 
 module.exports = {
   listVideos,
