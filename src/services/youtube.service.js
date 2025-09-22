@@ -43,19 +43,37 @@ async function upsertVideosForChannel(channelRow, maxResults = 25) {
     for (const v of details) {
       const { id: youtube_video_id, snippet, contentDetails, statistics } = v;
 
-      await Video.upsert({
-        youtube_video_id,
-        channel_id: channelRow.id,
-        title: snippet?.title || '',
-        description: snippet?.description || '',
-        thumbnails_json: snippet?.thumbnails || {},
-        published_at: snippet?.publishedAt ? new Date(snippet.publishedAt) : new Date(),
-        duration_iso: contentDetails?.duration || null,
-        view_count: Number(statistics?.viewCount || 0),
-        like_count: Number(statistics?.likeCount || 0),
-        comment_count: Number(statistics?.commentCount || 0),
-        category: sequelize.literal(`COALESCE("category", 'Semua')`),
-      }, { transaction: t });
+      const existing = await Video.findOne({ where: { youtube_video_id }, transaction: t });
+
+      if (existing) {
+        // Update tanpa mengubah category
+        await existing.update({
+          channel_id: channelRow.id,
+          title: snippet?.title || '',
+          description: snippet?.description || '',
+          thumbnails_json: snippet?.thumbnails || {},
+          published_at: snippet?.publishedAt ? new Date(snippet.publishedAt) : new Date(),
+          duration_iso: contentDetails?.duration || null,
+          view_count: Number(statistics?.viewCount || 0),
+          like_count: Number(statistics?.likeCount || 0),
+          comment_count: Number(statistics?.commentCount || 0),
+        }, { transaction: t });
+      } else {
+        // Insert baru → kategori default
+        await Video.create({
+          youtube_video_id,
+          channel_id: channelRow.id,
+          title: snippet?.title || '',
+          description: snippet?.description || '',
+          thumbnails_json: snippet?.thumbnails || {},
+          published_at: snippet?.publishedAt ? new Date(snippet.publishedAt) : new Date(),
+          duration_iso: contentDetails?.duration || null,
+          view_count: Number(statistics?.viewCount || 0),
+          like_count: Number(statistics?.likeCount || 0),
+          comment_count: Number(statistics?.commentCount || 0),
+          category: 'Semua',
+        }, { transaction: t });
+      }
     }
 
     await t.commit();
@@ -65,7 +83,6 @@ async function upsertVideosForChannel(channelRow, maxResults = 25) {
     throw err;
   }
 }
-
 
 async function syncAllActiveChannels() {
     const channels = await Channel.findAll({ where: { is_active: true } });
