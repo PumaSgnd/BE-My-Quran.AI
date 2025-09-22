@@ -13,18 +13,14 @@ if (!dbUrl.includes("sslmode")) {
   dbUrl += (dbUrl.includes("?") ? "&" : "?") + "sslmode=require";
 }
 
-const sequelize = new Sequelize(DATABASE_URL, {
+const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
   logging: false,
   pool: { max: 5, min: 0, acquire: 20000, idle: 10000 },
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
+    ssl: { require: true, rejectUnauthorized: false },
   },
-  define: { freezeTableName: true, timestamps: false },
-});
+})
 
 sequelize.authenticate()
   .then(() => console.log("✅ Koneksi database berhasil"))

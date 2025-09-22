@@ -1,8 +1,10 @@
 // src/services/youtube.service.js
 const axios = require('axios');
-const { Channel, Video, sequelize } = require('../models');
+const sequelize = require('../config/sequelize');
+const Video = require('../models/video.model');
+const Channel = require('../models/channel.model');
 
-const YT_API_KEY = process.env.YT_API_KEY;
+const YT_API_KEY = process.env.YOUTUBE_API_KEY;
 const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 
 async function fetchLatestVideoIdsByChannel(channelId, maxResults = 25) {

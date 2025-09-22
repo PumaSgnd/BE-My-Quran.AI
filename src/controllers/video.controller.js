@@ -1,6 +1,7 @@
 // src/controllers/video.controller.js
 const { Op } = require('sequelize');
-const { Channel, Video } = require('../models');
+const Video = require('../models/video.model');
+const Channel = require('../models/channel.model');
 const { syncAllActiveChannels } = require('../services/youtube.service');
 
 const mapVideo = (v) => ({
