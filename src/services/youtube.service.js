@@ -35,34 +35,37 @@ async function fetchVideoDetails(ids) {
 }
 
 async function upsertVideosForChannel(channelRow, maxResults = 25) {
-    const t = await sequelize.transaction();
-    try {
-        const ids = await fetchLatestVideoIdsByChannel(channelRow.youtube_channel_id, maxResults);
-        const details = await fetchVideoDetails(ids);
+  const t = await sequelize.transaction();
+  try {
+    const ids = await fetchLatestVideoIdsByChannel(channelRow.youtube_channel_id, maxResults);
+    const details = await fetchVideoDetails(ids);
 
-        for (const v of details) {
-            const { id: youtube_video_id, snippet, contentDetails, statistics } = v;
-            await Video.upsert({
-                youtube_video_id,
-                channel_id: channelRow.id,
-                title: snippet?.title || '',
-                description: snippet?.description || '',
-                thumbnails_json: snippet?.thumbnails || {},
-                published_at: snippet?.publishedAt ? new Date(snippet.publishedAt) : new Date(),
-                duration_iso: contentDetails?.duration || null,
-                view_count: Number(statistics?.viewCount || 0),
-                like_count: Number(statistics?.likeCount || 0),
-                comment_count: Number(statistics?.commentCount || 0),
-            }, { transaction: t });
-        }
+    for (const v of details) {
+      const { id: youtube_video_id, snippet, contentDetails, statistics } = v;
 
-        await t.commit();
-        return { inserted_or_updated: details.length };
-    } catch (err) {
-        await t.rollback();
-        throw err;
+      await Video.upsert({
+        youtube_video_id,
+        channel_id: channelRow.id,
+        title: snippet?.title || '',
+        description: snippet?.description || '',
+        thumbnails_json: snippet?.thumbnails || {},
+        published_at: snippet?.publishedAt ? new Date(snippet.publishedAt) : new Date(),
+        duration_iso: contentDetails?.duration || null,
+        view_count: Number(statistics?.viewCount || 0),
+        like_count: Number(statistics?.likeCount || 0),
+        comment_count: Number(statistics?.commentCount || 0),
+        category: sequelize.literal(`COALESCE("category", 'Semua')`),
+      }, { transaction: t });
     }
+
+    await t.commit();
+    return { inserted_or_updated: details.length };
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
 }
+
 
 async function syncAllActiveChannels() {
     const channels = await Channel.findAll({ where: { is_active: true } });

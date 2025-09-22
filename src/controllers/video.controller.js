@@ -22,34 +22,54 @@ const mapVideo = (v) => ({
 });
 
 exports.listVideos = async (req, res, next) => {
-    try {
-        const { page = 1, limit = 12, channel, q } = req.query;
+  try {
+    const { page = 1, limit = 12, channel, q, category } = req.query;
 
-        const where = {};
-        if (q) where.title = { [Op.iLike]: `%${q}%` };
-
-        let include = [{ model: Channel }];
-        if (channel) {
-            const aliasMap = { uah: 'Ustadz Adi Hidayat', hanan: 'Hanan Attaki' };
-            const filter = isNaN(Number(channel))
-                ? { name: aliasMap[String(channel).toLowerCase()] || channel }
-                : { id: Number(channel) };
-            include = [{ model: Channel, where: filter, required: true }];
-        }
-
-        const offset = (Number(page) - 1) * Number(limit);
-        const { rows, count } = await Video.findAndCountAll({
-            where,
-            include,
-            order: [['published_at', 'DESC']],
-            offset,
-            limit: Number(limit),
-        });
-
-        res.json({ status: 'success', page: Number(page), total: count, data: rows.map(mapVideo) });
-    } catch (err) {
-        next(err);
+    const where = {};
+    if (q) where.title = { [Op.iLike]: `%${q}%` };
+    if (category && category.toLowerCase() !== 'semua') {
+      where.category = category;
     }
+
+    let include = [{ model: Channel }];
+    if (channel) {
+      const aliasMap = { uah: 'Ustadz Adi Hidayat', hanan: 'Hanan Attaki' };
+      const filter = isNaN(Number(channel))
+        ? { name: aliasMap[String(channel).toLowerCase()] || channel }
+        : { id: Number(channel) };
+      include = [{ model: Channel, where: filter, required: true }];
+    }
+
+    const offset = (Number(page) - 1) * Number(limit);
+    const { rows, count } = await Video.findAndCountAll({
+      where,
+      include,
+      order: [['published_at', 'DESC']],
+      offset,
+      limit: Number(limit),
+    });
+
+    res.json({ status: 'success', page: Number(page), total: count, data: rows.map(mapVideo) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { category } = req.body;
+
+    const video = await Video.findByPk(id);
+    if (!video) return res.status(404).json({ status: 'error', message: 'Video not found' });
+
+    video.category = category;
+    await video.save();
+
+    res.json({ status: 'success', data: video });
+  } catch (err) {
+    next(err);
+  }
 };
 
 exports.syncNow = async (req, res, next) => {
