@@ -53,7 +53,7 @@ router.post("/", async (req, res) => {
     ];
 
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       messages,
       temperature: 0.2,
       max_tokens: 800,
