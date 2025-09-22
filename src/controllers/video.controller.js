@@ -80,3 +80,26 @@ exports.syncNow = async (req, res, next) => {
         next(err);
     }
 };
+
+async function getVideos(req, res) {
+  try {
+    const { category } = req.query;
+    const where = {};
+
+    if (category && category !== 'Semua') {
+      where.category = category;
+    }
+
+    const videos = await Video.findAll({ where });
+    res.json({ status: 'success', data: videos });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+}
+
+module.exports = {
+  listVideos,
+  updateCategory,
+  syncNow,
+  getVideos,
+};
