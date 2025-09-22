@@ -1,5 +1,6 @@
 // src/routes/video.routes.js
 const express = require('express');
+const ytdl = require('ytdl-core');
 const router = express.Router();
 const { listVideos, syncNow, updateCategory } = require('../controllers/video.controller');
 
@@ -166,5 +167,27 @@ router.get('/', listVideos);
 router.post('/sync', syncNow);
 
 router.patch('/:id/category', updateCategory);
+
+router.get('/video/:id/stream', async (req, res) => {
+  try {
+    const videoId = req.params.id;
+
+    // Cek dulu di DB apakah video ada
+    const video = await Video.findByPk(videoId);
+    if (!video) return res.status(404).json({ status: 'error', message: 'Video not found' });
+
+    // Ambil info YouTube
+    const info = await ytdl.getInfo(video.youtube_video_id);
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
+    if (!format.url) return res.status(404).json({ status: 'error', message: 'No playable format found' });
+
+    // Redirect langsung ke MP4 stream
+    res.redirect(format.url);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
 
 module.exports = router;
