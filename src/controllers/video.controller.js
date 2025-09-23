@@ -95,29 +95,38 @@ const getVideos = async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 };
+
 const streamVideo = async (req, res) => {
-    try {
-        const video = await Video.findByPk(req.params.id);
-        if (!video) return res.status(404).send('Video not found');
+  try {
+    const video = await Video.findByPk(req.params.id);
+    if (!video) return res.status(404).send('Video not found');
 
-        const info = await ytdl.getInfo(video.youtube_video_id);
-        const format = ytdl.chooseFormat(info.formats, { 
-            quality: 'highestvideo', 
-            filter: 'videoandaudio' 
-        });
-        if (!format?.url) return res.status(410).send('Video not available');
+    const info = await ytdl.getInfo(video.youtube_video_id);
 
-        const videoStream = ytdl(video.youtube_video_id, { format });
-        res.setHeader('Content-Type', 'video/mp4');
-        videoStream.pipe(res);
+    // Coba ambil format video+audio
+    let format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo', filter: 'videoandaudio' });
 
-    } catch (err) {
-        console.error(err);
-        if (err.statusCode === 410) {
-            return res.status(410).send('Video not available');
-        }
-        res.status(500).send('Server error');
+    // Fallback: ambil videoonly
+    if (!format?.url) {
+      format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo', filter: 'videoonly' });
+      if (!format?.url) {
+        return res.status(410).send('Video not available');
+      }
     }
+
+    res.setHeader('Content-Type', 'video/mp4');
+    ytdl(video.youtube_video_id, { format })
+      .on('error', (err) => {
+        console.error('ytdl streaming error:', err);
+        res.status(500).send('Error streaming video');
+      })
+      .pipe(res);
+
+  } catch (err) {
+    console.error('streamVideo error:', err);
+    if (err.statusCode === 410) return res.status(410).send('Video not available');
+    res.status(500).send('Server error');
+  }
 };
 
 module.exports = {
