@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const ytdl = require('ytdl-core');
 const Video = require('../models/video.model');
 const Channel = require('../models/channel.model');
 const { syncAllActiveChannels } = require('../services/youtube.service');
@@ -95,9 +96,34 @@ const getVideos = async (req, res) => {
   }
 };
 
+const streamVideo = async (req, res) => {
+  try {
+    const video = await Video.findByPk(req.params.id);
+    if (!video) return res.status(404).send('Video not found');
+
+    const info = await ytdl.getInfo(video.youtube_video_id);
+    const format = ytdl.chooseFormat(info.formats, {
+      quality: 'highestvideo',
+      filter: 'videoandaudio'
+    });
+
+    if (!format || !format.url) return res.status(500).send('Cannot get video stream');
+
+    const videoStream = ytdl(video.youtube_video_id, { format });
+    res.setHeader('Content-Type', 'video/mp4');
+    videoStream.pipe(res);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+};
+
+
 module.exports = {
   listVideos,
   updateCategory,
   syncNow,
   getVideos,
+  streamVideo
 };
