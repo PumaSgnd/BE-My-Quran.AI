@@ -1,7 +1,7 @@
 // src/routes/video.routes.js
 const express = require('express');
 const router = express.Router();
-const { listVideos, syncNow, updateCategory } = require('../controllers/video.controller');
+const { listVideos, syncNow, updateCategory, streamVideo} = require('../controllers/video.controller');
 
 /**
  * @swagger
@@ -167,6 +167,6 @@ router.post('/sync', syncNow);
 
 router.patch('/:id/category', updateCategory);
 
-router.get('/:id/stream', videoController.streamVideo);
+router.get('/:id/stream', streamVideo);
 
 module.exports = router;
