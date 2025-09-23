@@ -170,23 +170,24 @@ router.patch('/:id/category', updateCategory);
 
 router.get('/video/:id/stream', async (req, res) => {
   try {
-    const videoId = req.params.id;
+    const video = await Video.findByPk(req.params.id);
+    if (!video) return res.status(404).send('Video not found');
 
-    // Cek dulu di DB apakah video ada
-    const video = await Video.findByPk(videoId);
-    if (!video) return res.status(404).json({ status: 'error', message: 'Video not found' });
-
-    // Ambil info YouTube dengan ytdl-core
     const info = await ytdl.getInfo(video.youtube_video_id);
-    const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
-    if (!format.url) return res.status(404).json({ status: 'error', message: 'No playable format found' });
+    const format = ytdl.chooseFormat(info.formats, {
+      quality: 'highestvideo',
+      filter: 'videoandaudio'
+    });
 
-    // Redirect langsung ke MP4 stream
-    res.redirect(format.url);
+    if (!format || !format.url) return res.status(500).send('Cannot get video stream');
+
+    const videoStream = ytdl(video.youtube_video_id, { format });
+    res.setHeader('Content-Type', 'video/mp4');
+    videoStream.pipe(res);
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ status: 'error', message: err.message });
+    res.status(500).send('Server error');
   }
 });
 
