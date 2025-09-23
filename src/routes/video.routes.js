@@ -176,7 +176,7 @@ router.get('/video/:id/stream', async (req, res) => {
     const video = await Video.findByPk(videoId);
     if (!video) return res.status(404).json({ status: 'error', message: 'Video not found' });
 
-    // Ambil info YouTube
+    // Ambil info YouTube dengan ytdl-core
     const info = await ytdl.getInfo(video.youtube_video_id);
     const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
     if (!format.url) return res.status(404).json({ status: 'error', message: 'No playable format found' });

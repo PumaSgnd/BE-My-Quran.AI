@@ -18,6 +18,7 @@ const mapVideo = (v) => ({
   },
   channel: v.Channel ? { id: v.Channel.id, name: v.Channel.name } : null,
   embed_url: `https://www.youtube.com/embed/${v.youtube_video_id}`,
+  url: `https://www.youtube.com/watch?v=${v.youtube_video_id}`,
 });
 
 const listVideos = async (req, res, next) => {
