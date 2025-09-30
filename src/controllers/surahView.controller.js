@@ -246,8 +246,8 @@ async function getSurahView(req, res) {
                     segmentsByAyahId.set(row.ayah_id, []);
                 }
                 segmentsByAyahId.get(row.ayah_id).push({
-                    start: row.start_time,
-                    end: row.end_time,
+                    start: row.start_time_ms,
+                    end: row.end_time_ms,
                 });
             }
         }
