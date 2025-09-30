@@ -231,6 +231,27 @@ async function getSurahView(req, res) {
                 : null;
         }
 
+        // 5b) Audio segments per ayah
+        let segmentsByAyahId = new Map();
+        if (withAudio && reciterId && ayahs.length) {
+            const ayahIds = ayahs.map(r => r.id);
+            const segs = await db.query(
+                `SELECT s.ayah_id, s.start_time, s.end_time
+            FROM audio_segments s
+            WHERE s.reciter_id = $1 AND s.ayah_id = ANY($2)`,
+                [reciterId, ayahIds]
+            );
+            for (const row of segs.rows) {
+                if (!segmentsByAyahId.has(row.ayah_id)) {
+                    segmentsByAyahId.set(row.ayah_id, []);
+                }
+                segmentsByAyahId.get(row.ayah_id).push({
+                    start: row.start_time,
+                    end: row.end_time,
+                });
+            }
+        }
+
         // 6) State user
         let userState = null;
         if (withUserState && req.user?.id) {
@@ -288,6 +309,10 @@ async function getSurahView(req, res) {
                 base.transliteration = lt
                     ? { mode: latinMode, text: (latinMode === 'raw' ? lt.raw : lt.ui) }
                     : null;
+            }
+
+            if (withAudio) {
+                base.audio_segments = segmentsByAyahId.get(r.id) || [];
             }
 
             return base;
