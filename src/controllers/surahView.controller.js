@@ -236,7 +236,7 @@ async function getSurahView(req, res) {
         if (withAudio && reciterId && ayahs.length) {
             const ayahIds = ayahs.map(r => r.id);
             const segs = await db.query(
-                `SELECT s.ayah_id, s.start_time, s.end_time
+                `SELECT s.ayah_id, s.start_time_ms, s.end_time_ms
             FROM audio_segments s
             WHERE s.reciter_id = $1 AND s.ayah_id = ANY($2)`,
                 [reciterId, ayahIds]
