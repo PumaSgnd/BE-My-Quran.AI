@@ -22,29 +22,34 @@ Anda adalah "My-Quran.AI", asisten yang HANYA menjawab pertanyaan tentang Islam.
 - Jika butuh tafsir mendalam/fatwa, arahkan user untuk bertanya pada ulama.
 `;
 
-async function saveMessage(sessionId, role, content) {
-  const sql = `INSERT INTO messages (session_id, role, content, created_at)
-               VALUES ($1,$2,$3,now()) RETURNING id`;
-  await pool.query(sql, [sessionId, role, content]);
+async function saveMessage(userId, sessionId, role, content) {
+  const sql = `
+    INSERT INTO messages (user_id, session_id, role, content, created_at)
+    VALUES ($1, $2, $3, $4, NOW())
+    RETURNING id
+  `;
+  await pool.query(sql, [userId, sessionId, role, content]);
 }
 
-async function loadRecentMessages(sessionId, limit = 10) {
-  const sql = `SELECT role, content FROM messages
-               WHERE session_id=$1 ORDER BY created_at DESC LIMIT $2`;
-  const res = await pool.query(sql, [sessionId, limit]);
+async function loadRecentMessages(userId, sessionId, limit = 10) {
+  const sql = `
+    SELECT role, content FROM messages
+    WHERE user_id = $1 AND session_id = $2
+    ORDER BY created_at DESC LIMIT $3
+  `;
+  const res = await pool.query(sql, [userId, sessionId, limit]);
   return res.rows.reverse();
 }
 
 router.post("/", async (req, res) => {
-  const { message, sessionId = "default" } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: "Field 'message' wajib ada" });
+  const { message, sessionId = "default", userId } = req.body;
+  if (!message || !userId) {
+    return res.status(400).json({ error: "Field 'message' dan 'userId' wajib ada" });
   }
 
   try {
-    await saveMessage(sessionId, "user", message);
-
-    const history = await loadRecentMessages(sessionId, 8);
+    await saveMessage(userId, sessionId, "user", message);
+    const history = await loadRecentMessages(userId, sessionId, 8);
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -67,6 +72,26 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error("Chat error:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/", async (req, res) => {
+  const { userId, sessionId = "default" } = req.query;
+
+  if (!userId) return res.status(400).json({ error: "userId wajib ada" });
+
+  try {
+    const sql = `
+      SELECT id, role, content, created_at
+      FROM messages
+      WHERE user_id = $1 AND session_id = $2
+      ORDER BY created_at ASC
+    `;
+    const result = await pool.query(sql, [userId, sessionId]);
+    res.json({ messages: result.rows });
+  } catch (err) {
+    console.error("Fetch messages error:", err);
+    res.status(500).json({ error: "Gagal mengambil riwayat chat" });
   }
 });
 
