@@ -1,13 +1,8 @@
 // src/routes/chat.routes.js
 const express = require("express");
+const db = require('../config/db');
 const router = express.Router();
-const { Pool } = require("pg");
 const OpenAI = require("openai");
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
-});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -28,7 +23,7 @@ async function saveMessage(userId, sessionId, role, content) {
     VALUES ($1, $2, $3, $4, NOW())
     RETURNING id
   `;
-  await pool.query(sql, [userId, sessionId, role, content]);
+  await db.query(sql, [userId, sessionId, role, content]);
 }
 
 async function loadRecentMessages(userId, sessionId, limit = 10) {
@@ -37,7 +32,7 @@ async function loadRecentMessages(userId, sessionId, limit = 10) {
     WHERE user_id = $1 AND session_id = $2
     ORDER BY created_at DESC LIMIT $3
   `;
-  const res = await pool.query(sql, [userId, sessionId, limit]);
+  const res = await db.query(sql, [userId, sessionId, limit]);
   return res.rows.reverse();
 }
 
@@ -88,7 +83,7 @@ router.get("/", async (req, res) => {
       WHERE user_id = $1 AND session_id = $2
       ORDER BY created_at ASC
     `;
-    const result = await pool.query(sql, [userId, sessionId]);
+    const result = await db.query(sql, [userId, sessionId]);
     res.json({ messages: result.rows });
   } catch (err) {
     console.error("Fetch messages error:", err);
