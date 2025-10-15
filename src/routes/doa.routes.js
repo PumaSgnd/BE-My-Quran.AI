@@ -121,18 +121,25 @@ router.get('/categories', async (req, res) => {
 router.get('/category/:title', async (req, res) => {
   const { title } = req.params;
 
-  // cek kategori valid
-  const groups = categoryMapping[title];
-  if (!groups) {
-    return res.status(404).json({ message: 'Kategori tidak ditemukan' });
-  }
-
   try {
-    // ambil semua doa yang grupnya ada di kategori ini
-    const result = await db.query(
-      `SELECT * FROM prayer WHERE grup = ANY($1::text[]) ORDER BY id ASC`,
-      [groups]
-    );
+    let result;
+
+    if (title === "Semua") {
+      // Ambil semua doa
+      result = await db.query('SELECT * FROM prayer ORDER BY id ASC');
+    } else {
+      // cek kategori valid
+      const groups = categoryMapping[title];
+      if (!groups) {
+        return res.status(404).json({ message: 'Kategori tidak ditemukan' });
+      }
+
+      // ambil semua doa yang grupnya ada di kategori ini
+      result = await db.query(
+        `SELECT * FROM prayer WHERE grup = ANY($1::text[]) ORDER BY id ASC`,
+        [groups]
+      );
+    }
 
     res.json(result.rows);
   } catch (err) {
