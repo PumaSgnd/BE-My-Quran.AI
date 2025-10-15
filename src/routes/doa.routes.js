@@ -2,6 +2,62 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+const categoryMapping = {
+  "Morning & Evening": [
+    "Bacaan Bila Kagum Terhadap Sesuatu", 
+    "Bacaan Terkait Adzan"
+  ],
+  "Prayer": [
+    "Beberapa Doa Terkait Shalat",
+    "Doa Berlindung Dari Empat Hal",
+    "Doa Berlindung Dari Keburukan",
+    "Doa Berlindung Dari Kecelakaan Dan Kematian Yang Mengerikan",
+    "Doa Berlindung Dari Orang Zalim Dan Orang Kafir",
+    "Doa Berlindung dari setan",
+    "Doa Berlindung Dari Syirik"
+  ],
+  "Praising Allah": [
+    "Doa Memohon Kebaikan Dan Berlindung Dari Keburukan",
+    "Doa Memohon Ampun, Rahmat Dan Kebaikan Lainnya",
+    "Doa Memohon Ilmu",
+    "Doa Memohon Keteguhan Hati"
+  ],
+  "Hajj & Umrah": [
+    "Doa Perjalanan",
+    "Doa Menghadapi Fenomena Alam"
+  ],
+  "Travel": [
+    "Doa Perjalanan",
+    "Doa Perlindungan"
+  ],
+  "Joy & Distress": [
+    "Doa Saat Sedih dan Sulit",
+    "Doa Saat Mendapat Kabar",
+    "Doa Saat Sakit"
+  ],
+  "Nature": [
+    "Doa Menghadapi Fenomena Alam"
+  ],
+  "Good Etiquette": [
+    "Beberapa Adab Dan Keutamaan",
+    "Lafal Dzikir Dan Keutamaannya",
+    "Istighfar Dan Taubat"
+  ],
+  "Home & Family": [
+    "Doa Keluar Dan Masuk Rumah",
+    "Doa Kepada Anak Yang Baru Lahir",
+    "Doa Terkait Istri Dan Anak",
+    "Doa Terkait Orang Tua"
+  ],
+  "Food & Drink": [
+    "Doa Terkait Makan"
+  ],
+  "Sickness & Death": [
+    "Doa Jenazah",
+    "Doa untuk Orang Sakit"
+  ]
+};
+
 // === GET semua doa ===
 // GET /api/doa
 router.get('/', async (req, res) => {
@@ -26,6 +82,61 @@ router.get('/grup/:grup', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('❌ Error fetching doa by grup:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.get('/categories', async (req, res) => {
+  try {
+    // Ambil semua doa dari database
+    const result = await db.query('SELECT grup FROM prayer');
+    const allDoas = result.rows.map(r => r.grup);
+
+    const categories = [];
+
+    // "Semua"
+    categories.push({
+      title: "Semua",
+      count: allDoas.length
+    });
+
+    // Mapping tiap kategori
+    for (const [category, groups] of Object.entries(categoryMapping)) {
+      // hitung jumlah doa yang masuk grup kategori ini
+      const count = allDoas.filter(grup => groups.includes(grup)).length;
+
+      categories.push({
+        title: category,
+        count
+      });
+    }
+
+    res.json(categories);
+  } catch (err) {
+    console.error('❌ Error fetching categories:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.get('/category/:title', async (req, res) => {
+  const { title } = req.params;
+
+  // cek kategori valid
+  const groups = categoryMapping[title];
+  if (!groups) {
+    return res.status(404).json({ message: 'Kategori tidak ditemukan' });
+  }
+
+  try {
+    // ambil semua doa yang grupnya ada di kategori ini
+    const result = await db.query(
+      `SELECT * FROM prayer WHERE grup = ANY($1::text[]) ORDER BY id ASC`,
+      [groups]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('❌ Error fetching doa by category:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
