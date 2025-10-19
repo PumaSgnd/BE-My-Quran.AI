@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const { isLoggedIn } = require('../middleware/isLoggedIn');
+const { isLoggedIn } = require('../middlewares/auth.middleware.js');
 
 // ============================
 // 📖 1. READ STATUS
