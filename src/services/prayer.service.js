@@ -2,8 +2,7 @@
 const crypto = require('crypto');
 const adhan = require('adhan');
 const { DateTime } = require('luxon');
-const { PrayerTimesCache} = require('../models/prayerTimesCache.model');
-const { UserPrayerPref } = require('../models/userPrayerPref.model');
+const { PrayerTimesCache, UserPrayerPref } = require('../models');
 
 // Map metode perhitungan ke adhan
 const METHOD_MAP = {
