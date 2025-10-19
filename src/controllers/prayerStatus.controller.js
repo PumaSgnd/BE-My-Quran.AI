@@ -8,7 +8,11 @@ exports.getRead = async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await db.query(
-      'SELECT prayer_id, created_at FROM prayer_read WHERE user_id = $1',
+      `SELECT r.prayer_id, p.nama, r.created_at
+       FROM prayer_read r
+       JOIN prayer p ON r.prayer_id = p.id
+       WHERE r.user_id = $1
+       ORDER BY r.created_at DESC`,
       [user_id]
     );
     res.json(result.rows);
@@ -60,10 +64,11 @@ exports.getFavorite = async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await db.query(
-      `SELECT f.prayer_id, p.nama, p.grup, f.created_at
+      `SELECT f.prayer_id, p.nama, f.created_at
        FROM prayer_favorite f
        JOIN prayer p ON f.prayer_id = p.id
-       WHERE f.user_id = $1`,
+       WHERE f.user_id = $1
+       ORDER BY f.created_at DESC`,
       [user_id]
     );
     res.json(result.rows);
@@ -115,7 +120,7 @@ exports.getNote = async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await db.query(
-      `SELECT n.id, n.prayer_id, n.note, n.updated_at, p.nama
+      `SELECT n.id, n.prayer_id, p.nama, n.note, n.updated_at
        FROM prayer_note n
        JOIN prayer p ON n.prayer_id = p.id
        WHERE n.user_id = $1
