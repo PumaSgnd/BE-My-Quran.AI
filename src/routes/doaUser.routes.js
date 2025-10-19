@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { isLoggedIn } = require('../middleware/isLoggedIn');
 
 // ============================
 // 📖 1. READ STATUS
 // ============================
 
-// GET semua doa yang sudah dibaca oleh user
-router.get('/read/:user_id', async (req, res) => {
-  const { user_id } = req.params;
+// GET semua doa yang sudah dibaca oleh user (🔐)
+router.get('/read', isLoggedIn, async (req, res) => {
+  const user_id = req.user.id;
   try {
     const result = await db.query(
       'SELECT prayer_id, created_at FROM prayer_read WHERE user_id = $1',
@@ -21,9 +22,11 @@ router.get('/read/:user_id', async (req, res) => {
   }
 });
 
-// POST tandai doa sebagai sudah dibaca
-router.post('/read', async (req, res) => {
-  const { user_id, prayer_id } = req.body;
+// POST tandai doa sebagai sudah dibaca (🔐)
+router.post('/read', isLoggedIn, async (req, res) => {
+  const { prayer_id } = req.body;
+  const user_id = req.user.id;
+
   try {
     await db.query(
       `INSERT INTO prayer_read (user_id, prayer_id)
@@ -38,14 +41,16 @@ router.post('/read', async (req, res) => {
   }
 });
 
-// DELETE hapus status sudah dibaca
-router.delete('/read', async (req, res) => {
-  const { user_id, prayer_id } = req.body;
+// DELETE hapus status sudah dibaca (🔐)
+router.delete('/read', isLoggedIn, async (req, res) => {
+  const { prayer_id } = req.body;
+  const user_id = req.user.id;
+
   try {
-    await db.query('DELETE FROM prayer_read WHERE user_id = $1 AND prayer_id = $2', [
-      user_id,
-      prayer_id,
-    ]);
+    await db.query(
+      'DELETE FROM prayer_read WHERE user_id = $1 AND prayer_id = $2',
+      [user_id, prayer_id]
+    );
     res.json({ message: '🗑️ Status baca dihapus' });
   } catch (err) {
     console.error('❌ Error deleting read doa:', err);
@@ -57,9 +62,9 @@ router.delete('/read', async (req, res) => {
 // ❤️ 2. FAVORITE STATUS
 // ============================
 
-// GET daftar doa favorit user
-router.get('/favorite/:user_id', async (req, res) => {
-  const { user_id } = req.params;
+// GET daftar doa favorit user (🔐)
+router.get('/favorite', isLoggedIn, async (req, res) => {
+  const user_id = req.user.id;
   try {
     const result = await db.query(
       `SELECT f.prayer_id, p.nama, p.grup, f.created_at
@@ -75,9 +80,11 @@ router.get('/favorite/:user_id', async (req, res) => {
   }
 });
 
-// POST tambah doa ke favorit
-router.post('/favorite', async (req, res) => {
-  const { user_id, prayer_id } = req.body;
+// POST tambah doa ke favorit (🔐)
+router.post('/favorite', isLoggedIn, async (req, res) => {
+  const { prayer_id } = req.body;
+  const user_id = req.user.id;
+
   try {
     await db.query(
       `INSERT INTO prayer_favorite (user_id, prayer_id)
@@ -92,9 +99,11 @@ router.post('/favorite', async (req, res) => {
   }
 });
 
-// DELETE hapus doa dari favorit
-router.delete('/favorite', async (req, res) => {
-  const { user_id, prayer_id } = req.body;
+// DELETE hapus doa dari favorit (🔐)
+router.delete('/favorite', isLoggedIn, async (req, res) => {
+  const { prayer_id } = req.body;
+  const user_id = req.user.id;
+
   try {
     await db.query(
       'DELETE FROM prayer_favorite WHERE user_id = $1 AND prayer_id = $2',
@@ -111,15 +120,16 @@ router.delete('/favorite', async (req, res) => {
 // 📝 3. NOTE
 // ============================
 
-// GET semua note user
-router.get('/note/:user_id', async (req, res) => {
-  const { user_id } = req.params;
+// GET semua note user (🔐)
+router.get('/note', isLoggedIn, async (req, res) => {
+  const user_id = req.user.id;
   try {
     const result = await db.query(
       `SELECT n.id, n.prayer_id, n.note, n.updated_at, p.nama
        FROM prayer_note n
        JOIN prayer p ON n.prayer_id = p.id
-       WHERE n.user_id = $1`,
+       WHERE n.user_id = $1
+       ORDER BY n.updated_at DESC`,
       [user_id]
     );
     res.json(result.rows);
@@ -129,9 +139,11 @@ router.get('/note/:user_id', async (req, res) => {
   }
 });
 
-// POST tambah catatan baru
-router.post('/note', async (req, res) => {
-  const { user_id, prayer_id, note } = req.body;
+// POST tambah atau update catatan (🔐)
+router.post('/note', isLoggedIn, async (req, res) => {
+  const { prayer_id, note } = req.body;
+  const user_id = req.user.id;
+
   try {
     await db.query(
       `INSERT INTO prayer_note (user_id, prayer_id, note)
@@ -147,14 +159,16 @@ router.post('/note', async (req, res) => {
   }
 });
 
-// DELETE hapus catatan
-router.delete('/note', async (req, res) => {
-  const { user_id, prayer_id } = req.body;
+// DELETE hapus catatan (🔐)
+router.delete('/note', isLoggedIn, async (req, res) => {
+  const { prayer_id } = req.body;
+  const user_id = req.user.id;
+
   try {
-    await db.query('DELETE FROM prayer_note WHERE user_id = $1 AND prayer_id = $2', [
-      user_id,
-      prayer_id,
-    ]);
+    await db.query(
+      'DELETE FROM prayer_note WHERE user_id = $1 AND prayer_id = $2',
+      [user_id, prayer_id]
+    );
     res.json({ message: '🗑️ Catatan dihapus' });
   } catch (err) {
     console.error('❌ Error deleting note:', err);
