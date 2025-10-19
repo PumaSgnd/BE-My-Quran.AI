@@ -1,13 +1,10 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { isLoggedIn } = require("../middlewares/auth.middleware.js");
-const {
-  getWeeklyPrayers,
-  toggleWeeklyPrayer,
-} = require("../controllers/weeklyPrayerController.js");
+const { isLoggedIn } = require('../middlewares/auth.middleware.js');
+const prayerWeeklyController = require('../controllers/prayerWeekly.controller.js');
 
-// ✅ Hanya user login yang bisa akses
-router.get("/:userId", isLoggedIn, getWeeklyPrayers);
-router.post("/", isLoggedIn, toggleWeeklyPrayer);
+router.get('/', isLoggedIn, prayerWeeklyController.getWeekly);
+router.post('/', isLoggedIn, prayerWeeklyController.toggleShalat);
+router.delete('/', isLoggedIn, prayerWeeklyController.deleteShalat);
 
 module.exports = router;
