@@ -3,56 +3,56 @@ const router = express.Router();
 const db = require('../config/db');
 
 const categoryMapping = {
-  "Morning & Evening": [
-    "Bacaan Bila Kagum Terhadap Sesuatu", 
+  "Pagi & Petang": [
+    "Bacaan Bila Kagum Terhadap Sesuatu",
     "Bacaan Terkait Adzan"
   ],
-  "Prayer": [
+  "Shalat": [
     "Beberapa Doa Terkait Shalat",
     "Doa Berlindung Dari Empat Hal",
     "Doa Berlindung Dari Keburukan",
     "Doa Berlindung Dari Kecelakaan Dan Kematian Yang Mengerikan",
     "Doa Berlindung Dari Orang Zalim Dan Orang Kafir",
-    "Doa Berlindung dari setan",
+    "Doa Berlindung dari Setan",
     "Doa Berlindung Dari Syirik"
   ],
-  "Praising Allah": [
+  "Memuji Allah": [
     "Doa Memohon Kebaikan Dan Berlindung Dari Keburukan",
     "Doa Memohon Ampun, Rahmat Dan Kebaikan Lainnya",
     "Doa Memohon Ilmu",
     "Doa Memohon Keteguhan Hati"
   ],
-  "Hajj & Umrah": [
+  "Haji & Umrah": [
     "Doa Perjalanan",
     "Doa Menghadapi Fenomena Alam"
   ],
-  "Travel": [
+  "Perjalanan": [
     "Doa Perjalanan",
     "Doa Perlindungan"
   ],
-  "Joy & Distress": [
+  "Kegembiraan & Kesulitan": [
     "Doa Saat Sedih dan Sulit",
     "Doa Saat Mendapat Kabar",
     "Doa Saat Sakit"
   ],
-  "Nature": [
+  "Alam": [
     "Doa Menghadapi Fenomena Alam"
   ],
-  "Good Etiquette": [
+  "Adab & Akhlak Baik": [
     "Beberapa Adab Dan Keutamaan",
     "Lafal Dzikir Dan Keutamaannya",
     "Istighfar Dan Taubat"
   ],
-  "Home & Family": [
+  "Rumah & Keluarga": [
     "Doa Keluar Dan Masuk Rumah",
     "Doa Kepada Anak Yang Baru Lahir",
     "Doa Terkait Istri Dan Anak",
     "Doa Terkait Orang Tua"
   ],
-  "Food & Drink": [
+  "Makanan & Minuman": [
     "Doa Terkait Makan"
   ],
-  "Sickness & Death": [
+  "Sakit & Kematian": [
     "Doa Jenazah",
     "Doa untuk Orang Sakit"
   ]
