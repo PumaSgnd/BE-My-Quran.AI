@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { isLoggedIn } = require('../middlewares/auth.middleware.js');
-const prayerWeeklyController = require('../controllers/prayerWeekly.controller.js');
+const prayerWeeklyController = require('../controllers/weeklyPrayer.controller.js');
 
 router.get('/', isLoggedIn, prayerWeeklyController.getWeekly);
 router.post('/', isLoggedIn, prayerWeeklyController.toggleShalat);
