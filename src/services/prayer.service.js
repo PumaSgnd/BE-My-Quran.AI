@@ -17,6 +17,7 @@ const METHOD_MAP = {
     Singapore: 'Singapore',
     Turkey: 'Turkey',
     JAKIM: 'JAKIM', // jika tidak tersedia di versi adhan, fallback ke MWL di methodParams()
+    Kemenag: 'Kemenag', // jika tidak tersedia di versi adhan, fallback ke MWL di methodParams()
 };
 
 const MADHAB_MAP = { Shafi: adhan.Madhab.Shafi, Hanafi: adhan.Madhab.Hanafi };
@@ -47,6 +48,13 @@ function ensureTz(tz) {
 }
 
 function methodParams(name) {
+    if (name === 'Kemenag') {
+        const params = adhan.CalculationMethod.Egyptian();
+        params.fajrAngle = 20;
+        params.ishaAngle = 18;
+        return params;
+    }
+    
     const key = METHOD_MAP[name] || 'MuslimWorldLeague';
     const fn = adhan.CalculationMethod[key];
     if (!fn) {
