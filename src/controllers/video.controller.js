@@ -99,33 +99,45 @@ const getVideos = async (req, res) => {
 const streamVideo = async (req, res) => {
   try {
     const video = await Video.findByPk(req.params.id);
-    if (!video) return res.status(404).send('Video not found');
+    if (!video) return res.status(404).send("Video not found");
 
     const info = await ytdl.getInfo(video.youtube_video_id);
 
-    // Coba ambil format video+audio
-    let format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo', filter: 'videoandaudio' });
+    // 🔹 Ambil format terbaik dengan audio+video
+    let format = ytdl.chooseFormat(info.formats, {
+      quality: "highest",
+      filter: "audioandvideo",
+    });
 
-    // Fallback: ambil videoonly
+    // 🔹 Fallback ke video-only jika tidak tersedia
     if (!format?.url) {
-      format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo', filter: 'videoonly' });
+      format = ytdl.chooseFormat(info.formats, {
+        quality: "highestvideo",
+        filter: "videoonly",
+      });
       if (!format?.url) {
-        return res.status(410).send('Video not available');
+        return res.status(410).send("Video not available");
       }
     }
 
-    res.setHeader('Content-Type', 'video/mp4');
-    ytdl(video.youtube_video_id, { format })
-      .on('error', (err) => {
-        console.error('ytdl streaming error:', err);
-        res.status(500).send('Error streaming video');
-      })
-      .pipe(res);
+    // 🔹 Tambahkan dukungan range agar bisa seek video
+    const range = req.headers.range;
+    const videoStream = ytdl(video.youtube_video_id, { format });
 
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Accept-Ranges", "bytes");
+
+    videoStream.on("error", (err) => {
+      console.error("ytdl streaming error:", err);
+      if (!res.headersSent) res.status(500).send("Error streaming video");
+    });
+
+    videoStream.pipe(res);
   } catch (err) {
-    console.error('streamVideo error:', err);
-    if (err.statusCode === 410) return res.status(410).send('Video not available');
-    res.status(500).send('Server error');
+    console.error("streamVideo error:", err);
+    if (err.statusCode === 410)
+      return res.status(410).send("Video not available");
+    res.status(500).send("Server error");
   }
 };
 
