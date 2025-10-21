@@ -103,41 +103,57 @@ const streamVideo = async (req, res) => {
 
     const info = await ytdl.getInfo(video.youtube_video_id);
 
-    // 🔹 Ambil format terbaik dengan audio+video
+    // 🔹 Pilih format MP4 dengan audio + video
     let format = ytdl.chooseFormat(info.formats, {
       quality: "highest",
-      filter: "audioandvideo",
+      filter: (f) => f.hasAudio && f.hasVideo && f.container === "mp4",
     });
 
-    // 🔹 Fallback ke video-only jika tidak tersedia
+    // 🔹 Fallback: video-only (tanpa audio)
     if (!format?.url) {
       format = ytdl.chooseFormat(info.formats, {
         quality: "highestvideo",
-        filter: "videoonly",
+        filter: (f) => f.container === "mp4",
       });
       if (!format?.url) {
         return res.status(410).send("Video not available");
       }
     }
 
-    // 🔹 Tambahkan dukungan range agar bisa seek video
     const range = req.headers.range;
-    const videoStream = ytdl(video.youtube_video_id, { format });
+    const videoSize = Number(format.contentLength || 0);
 
-    res.setHeader("Content-Type", "video/mp4");
-    res.setHeader("Accept-Ranges", "bytes");
+    if (range) {
+      // 🔹 Parsing range (misal: bytes=0-)
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : videoSize - 1;
 
-    videoStream.on("error", (err) => {
-      console.error("ytdl streaming error:", err);
-      if (!res.headersSent) res.status(500).send("Error streaming video");
-    });
+      const chunkSize = end - start + 1;
+      const headers = {
+        "Content-Range": `bytes ${start}-${end}/${videoSize}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunkSize,
+        "Content-Type": "video/mp4",
+      };
+      res.writeHead(206, headers);
 
-    videoStream.pipe(res);
+      ytdl(video.youtube_video_id, {
+        format,
+        range: { start, end },
+      }).pipe(res);
+    } else {
+      // 🔹 Full video tanpa range
+      res.setHeader("Content-Type", "video/mp4");
+      res.setHeader("Accept-Ranges", "bytes");
+      ytdl(video.youtube_video_id, { format }).pipe(res);
+    }
   } catch (err) {
     console.error("streamVideo error:", err);
-    if (err.statusCode === 410)
-      return res.status(410).send("Video not available");
-    res.status(500).send("Server error");
+    if (!res.headersSent)
+      res
+        .status(err.statusCode === 410 ? 410 : 500)
+        .send(err.statusCode === 410 ? "Video not available" : "Server error");
   }
 };
 
