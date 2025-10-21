@@ -96,91 +96,55 @@ const getVideos = async (req, res) => {
     }
 };
 
-const streamVideo = async (req, res) => {
+import ytdl from "ytdl-core";
+import { Video } from "../models/index.js";
+
+export const streamVideo = async (req, res) => {
   try {
     const video = await Video.findByPk(req.params.id);
     if (!video) return res.status(404).send("Video not found");
 
-    const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+    const videoId = video.youtube_video_id;
+    const info = await ytdl.getInfo(videoId);
 
-    // Ambil info setiap request (jangan cache)
-    const info = await ytdl.getInfo(youtubeUrl);
-
-    // Pilih format dengan kombinasi audio+video (mp4)
+    // Ambil format MP4 yang mengandung video dan audio
     let format = ytdl.chooseFormat(info.formats, {
-      quality: "highest",
-      filter: (f) => f.hasVideo && f.hasAudio && f.container === "mp4",
+      quality: "18", // mp4 360p (umumnya aman)
+      filter: (f) =>
+        f.mimeType?.includes("video/mp4") && f.hasAudio && f.hasVideo,
     });
 
-    // 🔸 Fallback: cari format lain yang masih punya audio (kadang webm)
+    // Kalau gak nemu format cocok, fallback ke 'highest' yang punya audio
     if (!format || !format.url) {
       format = ytdl.chooseFormat(info.formats, {
-        quality: "highest",
-        filter: (f) => f.hasVideo && f.hasAudio,
-      });
-    }
-
-    // 🔸 Fallback terakhir: video only
-    if (!format || !format.url) {
-      format = ytdl.chooseFormat(info.formats, {
-        quality: "highestvideo",
-        filter: "videoonly",
+        quality: "lowest",
+        filter: (f) => f.hasAudio,
       });
     }
 
     if (!format || !format.url) {
-      console.error("No playable format found for:", video.youtube_video_id);
+      console.error("No valid format found for:", videoId);
       return res.status(410).send("Video not available");
     }
 
-    // Range streaming support
-    const range = req.headers.range;
-    const videoSize = Number(format.contentLength || 0);
+    // Set header streaming
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Cache-Control", "no-cache");
 
-    if (range && videoSize) {
-      const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : videoSize - 1;
+    console.log(`🎥 Streaming: ${video.title} (${video.youtube_video_id})`);
 
-      const chunkSize = end - start + 1;
-      const headers = {
-        "Content-Range": `bytes ${start}-${end}/${videoSize}`,
-        "Accept-Ranges": "bytes",
-        "Content-Length": chunkSize,
-        "Content-Type": "video/mp4",
-      };
-      res.writeHead(206, headers);
+    const stream = ytdl(videoId, { format });
+    stream.on("error", (err) => {
+      console.error("ytdl streaming error:", err);
+      if (!res.headersSent) res.status(500).send("Error streaming video");
+    });
 
-      ytdl(youtubeUrl, {
-        format,
-        range: { start, end },
-        requestOptions: {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-          },
-        },
-      }).pipe(res);
-    } else {
-      res.setHeader("Content-Type", "video/mp4");
-      res.setHeader("Accept-Ranges", "bytes");
-
-      ytdl(youtubeUrl, {
-        format,
-        requestOptions: {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-          },
-        },
-      }).pipe(res);
-    }
+    stream.pipe(res);
   } catch (err) {
     console.error("streamVideo error:", err);
     if (!res.headersSent)
-      res
-        .status(err.statusCode === 410 ? 410 : 500)
-        .send(err.statusCode === 410 ? "Video not available" : "Server error");
+      res.status(500).send("Server error while streaming video");
   }
 };
 
