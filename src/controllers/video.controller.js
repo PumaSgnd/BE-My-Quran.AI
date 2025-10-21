@@ -96,55 +96,49 @@ const getVideos = async (req, res) => {
     }
 };
 
-import ytdl from "ytdl-core";
-import { Video } from "../models/index.js";
-
-export const streamVideo = async (req, res) => {
+const streamVideo = async (req, res) => {
   try {
     const video = await Video.findByPk(req.params.id);
-    if (!video) return res.status(404).send("Video not found");
+    if (!video) return res.status(404).send('Video not found');
 
     const videoId = video.youtube_video_id;
     const info = await ytdl.getInfo(videoId);
 
-    // Ambil format MP4 yang mengandung video dan audio
+    // Pilih format mp4 (video+audio)
     let format = ytdl.chooseFormat(info.formats, {
-      quality: "18", // mp4 360p (umumnya aman)
-      filter: (f) =>
-        f.mimeType?.includes("video/mp4") && f.hasAudio && f.hasVideo,
+      quality: '18', // 360p aman untuk streaming stabil
+      filter: (f) => f.mimeType?.includes('video/mp4') && f.hasAudio && f.hasVideo,
     });
 
-    // Kalau gak nemu format cocok, fallback ke 'highest' yang punya audio
     if (!format || !format.url) {
       format = ytdl.chooseFormat(info.formats, {
-        quality: "lowest",
+        quality: 'lowest',
         filter: (f) => f.hasAudio,
       });
     }
 
     if (!format || !format.url) {
-      console.error("No valid format found for:", videoId);
-      return res.status(410).send("Video not available");
+      console.error('No valid format found for:', videoId);
+      return res.status(410).send('Video not available');
     }
 
-    // Set header streaming
-    res.setHeader("Content-Type", "video/mp4");
-    res.setHeader("Accept-Ranges", "bytes");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'no-cache');
 
     console.log(`🎥 Streaming: ${video.title} (${video.youtube_video_id})`);
 
     const stream = ytdl(videoId, { format });
-    stream.on("error", (err) => {
-      console.error("ytdl streaming error:", err);
-      if (!res.headersSent) res.status(500).send("Error streaming video");
+    stream.on('error', (err) => {
+      console.error('ytdl streaming error:', err);
+      if (!res.headersSent) res.status(500).send('Error streaming video');
     });
 
     stream.pipe(res);
   } catch (err) {
-    console.error("streamVideo error:", err);
+    console.error('streamVideo error:', err);
     if (!res.headersSent)
-      res.status(500).send("Server error while streaming video");
+      res.status(500).send('Server error while streaming video');
   }
 };
 
