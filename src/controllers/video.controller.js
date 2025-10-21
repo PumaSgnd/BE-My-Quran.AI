@@ -101,30 +101,43 @@ const streamVideo = async (req, res) => {
     const video = await Video.findByPk(req.params.id);
     if (!video) return res.status(404).send("Video not found");
 
-    const info = await ytdl.getInfo(video.youtube_video_id);
+    const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
 
-    // 🔹 Pilih format MP4 dengan audio + video
+    // Ambil info setiap request (jangan cache)
+    const info = await ytdl.getInfo(youtubeUrl);
+
+    // Pilih format dengan kombinasi audio+video (mp4)
     let format = ytdl.chooseFormat(info.formats, {
       quality: "highest",
-      filter: (f) => f.hasAudio && f.hasVideo && f.container === "mp4",
+      filter: (f) => f.hasVideo && f.hasAudio && f.container === "mp4",
     });
 
-    // 🔹 Fallback: video-only (tanpa audio)
-    if (!format?.url) {
+    // 🔸 Fallback: cari format lain yang masih punya audio (kadang webm)
+    if (!format || !format.url) {
       format = ytdl.chooseFormat(info.formats, {
-        quality: "highestvideo",
-        filter: (f) => f.container === "mp4",
+        quality: "highest",
+        filter: (f) => f.hasVideo && f.hasAudio,
       });
-      if (!format?.url) {
-        return res.status(410).send("Video not available");
-      }
     }
 
+    // 🔸 Fallback terakhir: video only
+    if (!format || !format.url) {
+      format = ytdl.chooseFormat(info.formats, {
+        quality: "highestvideo",
+        filter: "videoonly",
+      });
+    }
+
+    if (!format || !format.url) {
+      console.error("No playable format found for:", video.youtube_video_id);
+      return res.status(410).send("Video not available");
+    }
+
+    // Range streaming support
     const range = req.headers.range;
     const videoSize = Number(format.contentLength || 0);
 
-    if (range) {
-      // 🔹 Parsing range (misal: bytes=0-)
+    if (range && videoSize) {
       const parts = range.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : videoSize - 1;
@@ -138,15 +151,29 @@ const streamVideo = async (req, res) => {
       };
       res.writeHead(206, headers);
 
-      ytdl(video.youtube_video_id, {
+      ytdl(youtubeUrl, {
         format,
         range: { start, end },
+        requestOptions: {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+          },
+        },
       }).pipe(res);
     } else {
-      // 🔹 Full video tanpa range
       res.setHeader("Content-Type", "video/mp4");
       res.setHeader("Accept-Ranges", "bytes");
-      ytdl(video.youtube_video_id, { format }).pipe(res);
+
+      ytdl(youtubeUrl, {
+        format,
+        requestOptions: {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+          },
+        },
+      }).pipe(res);
     }
   } catch (err) {
     console.error("streamVideo error:", err);
