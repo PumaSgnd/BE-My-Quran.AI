@@ -16,6 +16,6 @@ router.get('/baca', getLastReadForBaca);
 
 router.post('/', updateLastRead);
 
-router.delete('/:surah_id', deleteLastRead);
+router.delete('/:surah_id/:ayah_id', deleteLastRead);
 
 module.exports = router;
