@@ -1,5 +1,6 @@
 const db = require('../config/db');
 
+// 🔹 Ambil semua last read milik user
 const getLastRead = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -22,6 +23,7 @@ const getLastRead = async (req, res) => {
   }
 };
 
+// 🔹 Ambil data buat tampilan "lanjut baca"
 const getLastReadForBaca = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -68,6 +70,7 @@ const getLastReadForBaca = async (req, res) => {
   }
 };
 
+// 🔹 Tambah atau update (multi ayah)
 const updateLastRead = async (req, res) => {
   const userId = req.user.id;
   const { surah_id, ayah_id, ayah_number, verse_key } = req.body;
@@ -76,28 +79,29 @@ const updateLastRead = async (req, res) => {
     await db.query(`
       INSERT INTO last_read_multi (user_id, surah_id, ayah_id, ayah_number, verse_key)
       VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (user_id, surah_id)
-      DO UPDATE SET 
-        ayah_id = EXCLUDED.ayah_id,
-        ayah_number = EXCLUDED.ayah_number,
-        verse_key = EXCLUDED.verse_key,
-        updated_at = CURRENT_TIMESTAMP
+      ON CONFLICT (user_id, surah_id, ayah_id)
+      DO UPDATE SET updated_at = CURRENT_TIMESTAMP
     `, [userId, surah_id, ayah_id, ayah_number, verse_key]);
 
-    res.status(200).json({ status: 'success', message: 'Last read berhasil diperbarui.' });
+    res.status(200).json({ status: 'success', message: 'Last read ayat berhasil diperbarui.' });
   } catch (error) {
     console.error("Error di updateLastRead:", error);
     res.status(500).json({ status: 'error', message: 'Internal Server Error' });
   }
 };
 
+// 🔹 Hapus satu ayah dari last read
 const deleteLastRead = async (req, res) => {
   const userId = req.user.id;
-  const { surah_id } = req.params;
+  const { surah_id, ayah_id } = req.body; // ⬅️ ambil dari body, bukan params
 
   try {
-    await db.query('DELETE FROM last_read_multi WHERE user_id = $1 AND surah_id = $2', [userId, surah_id]);
-    res.status(200).json({ status: 'success', message: 'Last read surah berhasil dihapus.' });
+    await db.query(`
+      DELETE FROM last_read_multi 
+      WHERE user_id = $1 AND surah_id = $2 AND ayah_id = $3
+    `, [userId, surah_id, ayah_id]);
+
+    res.status(200).json({ status: 'success', message: 'Last read ayat berhasil dihapus.' });
   } catch (error) {
     console.error("Error di deleteLastRead:", error);
     res.status(500).json({ status: 'error', message: 'Internal Server Error' });
