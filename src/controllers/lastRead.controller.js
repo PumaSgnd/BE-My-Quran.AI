@@ -35,6 +35,54 @@ const getLastRead = async (req, res) => {
     }
 };
 
+const getLastReadForBaca = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const query = `
+            SELECT 
+                lr.updated_at,
+                a.id AS ayah_id,
+                a.ayah_number,
+                a.verse_key,
+                a.text,
+                s.id AS surah_id,
+                s.name_simple AS surah_name,
+                s.name_translation_id AS surah_translation
+            FROM 
+                last_read lr
+            JOIN 
+                ayahs a ON lr.ayah_id = a.id
+            JOIN 
+                surahs s ON a.surah_number = s.id
+            WHERE 
+                lr.user_id = $1;
+        `;
+
+        const { rows } = await db.query(query, [userId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                status: 'success',
+                message: 'Belum ada data terakhir dibaca.',
+                data: null
+            });
+        }
+
+        // Kalau kamu mau data lengkap untuk halaman baca
+        res.status(200).json({
+            status: 'success',
+            message: 'Data terakhir dibaca berhasil diambil.',
+            data: rows[0]
+        });
+    } catch (error) {
+        console.error("Error di getLastReadForBaca:", error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal Server Error'
+        });
+    }
+};
+
 const updateLastRead = async (req, res) => {
     const userId = req.user.id;
     const { ayah_id } = req.body;
@@ -77,4 +125,4 @@ const deleteLastRead = async (req, res) => {
     }
 };
 
-module.exports = { getLastRead, updateLastRead, deleteLastRead };
+module.exports = { getLastRead, getLastReadForBaca, updateLastRead, deleteLastRead };

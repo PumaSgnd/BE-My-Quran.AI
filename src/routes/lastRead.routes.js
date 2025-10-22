@@ -1,7 +1,7 @@
 // src/routes/lastRead.routes.js
 const express = require('express');
 const router = express.Router();
-const { getLastRead, updateLastRead, deleteLastRead } = require('../controllers/lastRead.controller.js');
+const { getLastRead, getLastReadForBaca, updateLastRead, deleteLastRead } = require('../controllers/lastRead.controller.js');
 const { isLoggedIn } = require('../middlewares/auth.middleware.js');
 
 // Semua endpoint di file ini butuh login (cookie session OAuth)
@@ -151,6 +151,8 @@ router.get('/', getLastRead);
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
+router.post('/', getLastReadForBaca);
+
 router.post('/', updateLastRead);
 
 /**
