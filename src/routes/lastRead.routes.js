@@ -151,7 +151,7 @@ router.get('/', getLastRead);
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get('/', getLastReadForBaca);
+router.get('/baca', getLastReadForBaca);
 
 router.post('/', updateLastRead);
 
