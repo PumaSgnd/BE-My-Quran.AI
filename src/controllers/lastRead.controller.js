@@ -9,7 +9,7 @@ const getLastRead = async (req, res) => {
         l.*, 
         s.name AS surah_name, 
         s.name_arabic, 
-        s.translation AS surah_translation
+        s.name_translation_id AS surah_translation
       FROM last_read_multi l
       JOIN surahs s ON l.surah_id = s.id
       WHERE l.user_id = $1
@@ -38,7 +38,7 @@ const getLastReadForBaca = async (req, res) => {
         s.name AS surah_name,
         s.name_arabic AS surah_name_ar,
         s.name_simple AS surah_code,
-        s.translation AS surah_translation
+        s.name_translation_id AS surah_translation
       FROM last_read_multi lr
       JOIN ayahs a ON lr.ayah_id = a.id
       JOIN surahs s ON lr.surah_id = s.id
