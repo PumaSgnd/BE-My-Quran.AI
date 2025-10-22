@@ -75,7 +75,7 @@ const getLastReadForBaca = async (req, res) => {
         res.status(200).json({
             status: 'success',
             message: 'Data terakhir dibaca berhasil diambil.',
-            data: rows[0]
+            data: rows
         });
     } catch (error) {
         console.error("Error di getLastReadForBaca:", error);
