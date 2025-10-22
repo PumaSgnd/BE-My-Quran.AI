@@ -46,7 +46,7 @@ const getLastReadForBaca = async (req, res) => {
                 a.verse_key,
                 a.text,
                 s.id AS surah_id,
-                s.name_simple AS surah_name,
+                s.name AS surah_name,
                 s.name_translation_id AS surah_translation
             FROM 
                 last_read lr
