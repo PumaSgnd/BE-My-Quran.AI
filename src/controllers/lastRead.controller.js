@@ -44,9 +44,11 @@ const getLastReadForBaca = async (req, res) => {
                 a.id AS ayah_id,
                 a.ayah_number,
                 a.verse_key,
-                a.text,
+                a.text AS text_ar,
                 s.id AS surah_id,
                 s.name AS surah_name,
+                s.name_arabic AS surah_name_ar,
+                s.name_simple AS surah_code,
                 s.name_translation_id AS surah_translation
             FROM 
                 last_read lr
@@ -57,6 +59,7 @@ const getLastReadForBaca = async (req, res) => {
             WHERE 
                 lr.user_id = $1;
         `;
+
 
         const { rows } = await db.query(query, [userId]);
 
