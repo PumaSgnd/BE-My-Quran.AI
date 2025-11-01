@@ -1,44 +1,59 @@
-// src/controllers/content.controller.js
 const db = require('../config/db');
+
+// Fungsi pembantu untuk mengganti URL gambar ke file lokal
+const mapLocalImages = (data) => {
+    if (!data) return null;
+
+    const localImages = {
+        OPEN_URL_1: '/uploads/temukan/artikel1.png',
+        OPEN_URL_2: '/uploads/temukan/artikel2.png',
+        OPEN_URL_3: '/uploads/temukan/artikel3.png',
+        OPEN_LEARN_SECTION: '/uploads/temukan/belajar.png',
+        OPEN_MEMORIZE_SECTION: '/uploads/temukan/menghafalkan.png',
+        DEEP_DIVE_AYAH: '/uploads/temukan/selami.png',
+        OPEN_LAST_READ: '/uploads/temukan/baca.png',
+        OPEN_ARTICLE: '/uploads/temukan/ibadahharian.png',
+        OPEN_DAILY_AYAH: '/uploads/temukan/ayatharian.png',
+    };
+
+    // Untuk 3 banner pertama (OPEN_URL)
+    if (data.action_type === 'OPEN_URL') {
+        if (data.display_order === 1) data.image_url = localImages.OPEN_URL_1;
+        else if (data.display_order === 2) data.image_url = localImages.OPEN_URL_2;
+        else if (data.display_order === 3) data.image_url = localImages.OPEN_URL_3;
+    } 
+    // Untuk kartu utama
+    else if (localImages[data.action_type]) {
+        data.image_url = localImages[data.action_type];
+    }
+
+    return data;
+};
 
 const getTemukanPageContent = async (req, res) => {
     try {
-        // Kita akan menjalankan semua query ini secara bersamaan untuk efisiensi
+        // Jalankan semua query secara paralel
         const queries = [
-            // Query 1: Ambil semua banner
             db.query("SELECT * FROM featured_content WHERE screen_location = 'temukan_banner' AND is_active = true ORDER BY display_order ASC"),
-
-            // Query 2: Ambil kartu "Belajar"
             db.query("SELECT * FROM featured_content WHERE action_type = 'OPEN_LEARN_SECTION' AND is_active = true LIMIT 1"),
-
-            // Query 3: Ambil kartu "Menghafalkan"
             db.query("SELECT * FROM featured_content WHERE action_type = 'OPEN_MEMORIZE_SECTION' AND is_active = true LIMIT 1"),
-
-            // Query 4: Ambil kartu "Selami lebih dalam"
             db.query("SELECT * FROM featured_content WHERE action_type = 'DEEP_DIVE_AYAH' AND is_active = true LIMIT 1"),
-
-            // Query 5: Ambil kartu "Baca"
             db.query("SELECT * FROM featured_content WHERE action_type = 'OPEN_LAST_READ' AND is_active = true LIMIT 1"),
-
-            // Query 6: Ambil kartu "Ibadah Harian"
             db.query("SELECT * FROM featured_content WHERE action_type = 'OPEN_ARTICLE' AND action_value = 'doa-malaikat' AND is_active = true LIMIT 1"),
-
-            // Query 7: Ambil kartu "Ayat Harian"
             db.query("SELECT * FROM featured_content WHERE action_type = 'OPEN_DAILY_AYAH' AND is_active = true LIMIT 1")
         ];
 
-        // Jalankan semua query secara paralel
         const results = await Promise.all(queries);
 
-        // Susun hasilnya ke dalam format JSON yang rapi
+        // Terapkan mapping ke setiap hasil
         const responseData = {
-            banners: results[0].rows,
-            belajar: results[1].rows[0] || null,
-            menghafalkan: results[2].rows[0] || null,
-            selami_lebih_dalam: results[3].rows[0] || null,
-            baca: results[4].rows[0] || null,
-            ibadah_harian: results[5].rows[0] || null,
-            ayat_harian: results[6].rows[0] || null,
+            banners: results[0].rows.map(mapLocalImages),
+            belajar: mapLocalImages(results[1].rows[0]),
+            menghafalkan: mapLocalImages(results[2].rows[0]),
+            selami_lebih_dalam: mapLocalImages(results[3].rows[0]),
+            baca: mapLocalImages(results[4].rows[0]),
+            ibadah_harian: mapLocalImages(results[5].rows[0]),
+            ayat_harian: mapLocalImages(results[6].rows[0]),
         };
 
         res.status(200).json({
