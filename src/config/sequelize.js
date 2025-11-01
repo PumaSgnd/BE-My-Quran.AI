@@ -8,6 +8,8 @@
 
 const { Sequelize } = require('sequelize');
 
+console.log('📦 DATABASE_URL dari env:', process.env.DATABASE_URL || '(null)');
+
 const { DATABASE_URL } = process.env;
 
 if (!DATABASE_URL) {
