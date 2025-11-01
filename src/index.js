@@ -122,7 +122,7 @@ app.use('/api/chat', require('./routes/chat.routes.js'));
 app.use("/api/doa", require('./routes/doa.routes.js'));
 app.use('/api/doa-user', require('./routes/doaUser.routes.js'));
 app.use('/api/prayer', require('./routes/prayer.routes.js'));
-app.use('/api/prayer-weekly', require('./routes/weeklyPrayer.routes.js'));
+app.use('/api/prayer-weekly', require('./routes/weeklyPrayer.routes.js'))
 
 app.use((_req, res) => {
     res.status(404).json({ status: 'Error', message: 'Resource tidak ditemukan' });
