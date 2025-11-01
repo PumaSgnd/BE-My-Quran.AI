@@ -124,10 +124,6 @@ app.use('/api/doa-user', require('./routes/doaUser.routes.js'));
 app.use('/api/prayer', require('./routes/prayer.routes.js'));
 app.use('/api/prayer-weekly', require('./routes/weeklyPrayer.routes.js'));
 
-// temukan image
-app.use(express.static(path.join(rootDir, 'public')));
-app.use('/uploads', express.static(path.join(rootDir, 'public/uploads')));
-
 app.use((_req, res) => {
     res.status(404).json({ status: 'Error', message: 'Resource tidak ditemukan' });
 });
