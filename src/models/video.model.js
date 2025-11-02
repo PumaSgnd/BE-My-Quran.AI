@@ -14,11 +14,7 @@ const Video = sequelize.define('Video', {
   view_count: { type: DataTypes.BIGINT, defaultValue: 0 },
   like_count: { type: DataTypes.BIGINT, defaultValue: 0 },
   comment_count: { type: DataTypes.BIGINT, defaultValue: 0 },
-  category: { 
-    type: DataTypes.ARRAY(DataTypes.STRING), 
-    allowNull: true, 
-    defaultValue: ['Semua'] 
-  },
+  category: { type: DataTypes.STRING(50), allowNull: true, defaultValue: 'Semua' },
 }, {
   tableName: 'videos',
   underscored: true,
