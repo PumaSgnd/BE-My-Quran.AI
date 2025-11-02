@@ -40,13 +40,17 @@ async function upsertVideosForChannel(channelRow, maxResults = 25) {
     const ids = await fetchLatestVideoIdsByChannel(channelRow.youtube_channel_id, maxResults);
     const details = await fetchVideoDetails(ids);
 
-    for (const v of details) {
+    // 🚫 Filter video live / upcoming
+    const filteredDetails = details.filter(
+      (v) => v.snippet?.liveBroadcastContent === 'none'
+    );
+
+    for (const v of filteredDetails) {
       const { id: youtube_video_id, snippet, contentDetails, statistics } = v;
 
       const existing = await Video.findOne({ where: { youtube_video_id }, transaction: t });
 
       if (existing) {
-        // Update tanpa mengubah category
         await existing.update({
           channel_id: channelRow.id,
           title: snippet?.title || '',
@@ -59,7 +63,6 @@ async function upsertVideosForChannel(channelRow, maxResults = 25) {
           comment_count: Number(statistics?.commentCount || 0),
         }, { transaction: t });
       } else {
-        // Insert baru → kategori default
         await Video.create({
           youtube_video_id,
           channel_id: channelRow.id,
@@ -77,7 +80,7 @@ async function upsertVideosForChannel(channelRow, maxResults = 25) {
     }
 
     await t.commit();
-    return { inserted_or_updated: details.length };
+    return { inserted_or_updated: filteredDetails.length };
   } catch (err) {
     await t.rollback();
     throw err;
