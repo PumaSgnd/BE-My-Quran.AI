@@ -29,7 +29,7 @@ const listVideos = async (req, res, next) => {
         const where = {};
         if (q) where.title = { [Op.iLike]: `%${q}%` };
         if (category && category.toLowerCase() !== 'semua') {
-            where.category = category;
+            where.category = { [Op.contains]: [category] };
         }
 
         let include = [{ model: Channel }];
@@ -64,7 +64,8 @@ const updateCategory = async (req, res, next) => {
         const video = await Video.findByPk(id);
         if (!video) return res.status(404).json({ status: 'error', message: 'Video not found' });
 
-        video.category = category;
+        // Pastikan category array
+        video.category = Array.isArray(category) ? category : [category];
         await video.save();
 
         res.json({ status: 'success', data: video });
@@ -97,49 +98,49 @@ const getVideos = async (req, res) => {
 };
 
 const streamVideo = async (req, res) => {
-  try {
-    const video = await Video.findByPk(req.params.id);
-    if (!video) return res.status(404).send('Video not found');
+    try {
+        const video = await Video.findByPk(req.params.id);
+        if (!video) return res.status(404).send('Video not found');
 
-    const videoId = video.youtube_video_id;
-    const info = await ytdl.getInfo(videoId);
+        const videoId = video.youtube_video_id;
+        const info = await ytdl.getInfo(videoId);
 
-    // Pilih format mp4 (video+audio)
-    let format = ytdl.chooseFormat(info.formats, {
-      quality: '18', // 360p aman untuk streaming stabil
-      filter: (f) => f.mimeType?.includes('video/mp4') && f.hasAudio && f.hasVideo,
-    });
+        // Pilih format mp4 (video+audio)
+        let format = ytdl.chooseFormat(info.formats, {
+            quality: '18', // 360p aman untuk streaming stabil
+            filter: (f) => f.mimeType?.includes('video/mp4') && f.hasAudio && f.hasVideo,
+        });
 
-    if (!format || !format.url) {
-      format = ytdl.chooseFormat(info.formats, {
-        quality: 'lowest',
-        filter: (f) => f.hasAudio,
-      });
+        if (!format || !format.url) {
+            format = ytdl.chooseFormat(info.formats, {
+                quality: 'lowest',
+                filter: (f) => f.hasAudio,
+            });
+        }
+
+        if (!format || !format.url) {
+            console.error('No valid format found for:', videoId);
+            return res.status(410).send('Video not available');
+        }
+
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'no-cache');
+
+        console.log(`🎥 Streaming: ${video.title} (${video.youtube_video_id})`);
+
+        const stream = ytdl(videoId, { format });
+        stream.on('error', (err) => {
+            console.error('ytdl streaming error:', err);
+            if (!res.headersSent) res.status(500).send('Error streaming video');
+        });
+
+        stream.pipe(res);
+    } catch (err) {
+        console.error('streamVideo error:', err);
+        if (!res.headersSent)
+            res.status(500).send('Server error while streaming video');
     }
-
-    if (!format || !format.url) {
-      console.error('No valid format found for:', videoId);
-      return res.status(410).send('Video not available');
-    }
-
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Accept-Ranges', 'bytes');
-    res.setHeader('Cache-Control', 'no-cache');
-
-    console.log(`🎥 Streaming: ${video.title} (${video.youtube_video_id})`);
-
-    const stream = ytdl(videoId, { format });
-    stream.on('error', (err) => {
-      console.error('ytdl streaming error:', err);
-      if (!res.headersSent) res.status(500).send('Error streaming video');
-    });
-
-    stream.pipe(res);
-  } catch (err) {
-    console.error('streamVideo error:', err);
-    if (!res.headersSent)
-      res.status(500).send('Server error while streaming video');
-  }
 };
 
 module.exports = {
