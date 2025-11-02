@@ -103,17 +103,26 @@ const streamVideo = async (req, res) => {
 
     const videoId = video.youtube_video_id;
     const info = await ytdl.getInfo(videoId);
+    const requestedQuality = req.query.quality || '480';
 
-    // Pilih format mp4 (video+audio)
-    let format = ytdl.chooseFormat(info.formats, {
-      quality: '18', // 360p aman untuk streaming stabil
-      filter: (f) => f.mimeType?.includes('video/mp4') && f.hasAudio && f.hasVideo,
-    });
+    // Map kualitas ke itag YouTube
+    const qualityMap = {
+      '360': '18',
+      '480': '135',
+      '720': '22',
+      '1080': '137',
+    };
 
-    if (!format || !format.url) {
+    const itag = qualityMap[requestedQuality] || '18';
+
+    // Cari format berdasarkan itag
+    let format = info.formats.find(f => f.itag.toString() === itag && f.hasAudio && f.hasVideo);
+
+    // Jika tidak ketemu, fallback ke format terendah
+    if (!format) {
       format = ytdl.chooseFormat(info.formats, {
         quality: 'lowest',
-        filter: (f) => f.hasAudio,
+        filter: f => f.hasAudio && f.hasVideo,
       });
     }
 
@@ -126,14 +135,9 @@ const streamVideo = async (req, res) => {
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'no-cache');
 
-    console.log(`🎥 Streaming: ${video.title} (${video.youtube_video_id})`);
+    console.log(`🎥 Streaming ${requestedQuality}p: ${video.title} (${video.youtube_video_id})`);
 
     const stream = ytdl(videoId, { format });
-    stream.on('error', (err) => {
-      console.error('ytdl streaming error:', err);
-      if (!res.headersSent) res.status(500).send('Error streaming video');
-    });
-
     stream.pipe(res);
   } catch (err) {
     console.error('streamVideo error:', err);
