@@ -117,11 +117,11 @@ app.use('/api/tajwid', require('./routes/tajwid.routes.js'));
 app.use('/api/prayer', require('./routes/prayer.routes'));
 app.use('/api/videos', require('./routes/video.routes'));
 app.use('/api/missions', require('./routes/missions.routes'));
-app.use('/api/events', require('./routes/events.routes'));
-app.use('/api/wallet', require('./routes/wallet.routes'));
-app.use('/api/activity', require('./routes/activity.routes')); // opsional
 
-// 📌 tambahkan route Profile di sini
+// Jurnal Qur'an
+app.use('/api/journal', require('./routes/journal.routes.js'));
+
+// tambahkan route Profile di sini
 app.use('/api/profile', require('./routes/profile.routes.js'));
 
 // ---------- 404 & error handler ----------

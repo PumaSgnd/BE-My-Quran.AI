@@ -55,6 +55,13 @@ MissionPeriod.belongsTo(Mission, { foreignKey: 'mission_id' });
 
 MissionPeriod.hasMany(UserMissionProgress, { foreignKey: 'mission_period_id' });
 UserMissionProgress.belongsTo(MissionPeriod, { foreignKey: 'mission_period_id' });
+
+// Jurnal 
+
+const JournalMonthlyTarget = require('./JournalMonthlyTarget')(sequelize, DataTypes);
+const JournalEntry = require('./JournalEntry')(sequelize, DataTypes);
+
+
 // =================== EXPORT =================== //
 module.exports = {
     sequelize,
@@ -82,5 +89,9 @@ module.exports = {
     UserWallet,
     RewardLedger,
     IdempotencyKey,
-    ActivitySession
+    ActivitySession,
+
+    // journal
+    JournalMonthlyTarget,
+    JournalEntry,
 };
