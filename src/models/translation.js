@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         footnotes: DataTypes.TEXT,
         author_name: DataTypes.STRING,
         language_code: DataTypes.STRING,
-    }, { tableName: 'translations' });
+    }, { tableName: 'translations', timestamps: false });
 
     return Translation;
 };

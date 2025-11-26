@@ -1,27 +1,17 @@
-const { Ayah, Surah, AyahViews, Translation, sequelize } = require("../models");
+const { Surah, Ayah, AyahViews, Translation } = require("../models");
 
 exports.getPopular = async (req, res) => {
     try {
-        // ✅ Popular Surah berdasarkan jumlah ayah di surah (pakai verses_count)
-        const popularSurahs = await Ayah.findAll({
-            include: [
-                {
-                    model: Surah,
-                    attributes: [
-                        "id",
-                        "name",
-                        "name_translation_id",
-                        "name_arabic",
-                        "verses_count"
-                    ]
-                }
-            ],
+        // ✅ Popular Surah berdasarkan verses_count
+        const popularSurahs = await Surah.findAll({
             attributes: [
-                "surah_number",
-                [sequelize.fn("COUNT", sequelize.col("Ayah.id")), "ayah_count"]
+                "id",
+                "name",
+                "name_translation_id",
+                "name_arabic",
+                "verses_count"
             ],
-            group: ["surah_number", "Surah.id"],
-            order: [[sequelize.literal("ayah_count"), "DESC"]],
+            order: [["verses_count", "DESC"]],
             limit: 5
         });
 
