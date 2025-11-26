@@ -1,12 +1,31 @@
-const { Ayah, Surah, AyahViews } = require("../models");
+const { Ayah, Surah, AyahViews, sequelize } = require("../models");
 
-exports.getPopularAyahs = async (req, res) => {
+exports.getPopular = async (req, res) => {
     try {
-        const ayahs = await Ayah.findAll({
+        // ✅ Popular Surah (group by)
+        const popularSurahs = await Ayah.findAll({
             include: [
                 {
                     model: Surah,
-                    attributes: ["name_simple", "name_translation_id"]
+                    attributes: ["id", "name_simple", "name_translation_id"]
+                },
+                { model: AyahViews, attributes: [] }
+            ],
+            attributes: [
+                "surah_id",
+                [sequelize.fn("SUM", sequelize.col("AyahViews.total_views")), "total_views"]
+            ],
+            group: ["surah_id", "Surah.id"],
+            order: [[sequelize.literal("total_views"), "DESC"]],
+            limit: 10
+        });
+
+        // ✅ Popular Ayah (top 20 ayat)
+        const popularAyahs = await Ayah.findAll({
+            include: [
+                {
+                    model: Surah,
+                    attributes: ["id", "name_simple", "name_translation_id"]
                 },
                 {
                     model: AyahViews,
@@ -16,17 +35,17 @@ exports.getPopularAyahs = async (req, res) => {
             order: [
                 [AyahViews, "total_views", "DESC"]
             ],
-            limit: 20
+            limit: 10
         });
 
         res.json({
             status: "success",
-            count: ayahs.length,
-            data: ayahs
+            popular_surahs: popularSurahs,
+            popular_ayahs: popularAyahs
         });
 
     } catch (error) {
-        console.log("Popular ayahs error:", error);
+        console.log("Popular error:", error);
         res.status(500).json({ status: "error", message: "Internal Server Error" });
     }
 };
