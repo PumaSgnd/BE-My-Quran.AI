@@ -15,7 +15,7 @@ exports.getPopular = async (req, res) => {
             ],
             group: ["surah_number", "Surah.id"],
             order: [[sequelize.literal("total_ayah"), "DESC"]],
-            limit: 10
+            limit: 5
         });
 
         const popularAyahs = await Ayah.findAll({
@@ -32,7 +32,7 @@ exports.getPopular = async (req, res) => {
             order: [
                 [AyahViews, "total_views", "DESC"]
             ],
-            limit: 10
+            limit: 3
         });
 
         res.json({
