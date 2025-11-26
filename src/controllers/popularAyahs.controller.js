@@ -7,7 +7,7 @@ exports.getPopular = async (req, res) => {
             include: [
                 {
                     model: Surah,
-                    attributes: ["id", "name_simple", "name_translation_id"]
+                    attributes: ["id", "name_arabic", "name_translation_id"]
                 },
                 { model: AyahViews, attributes: [] }
             ],
@@ -25,7 +25,7 @@ exports.getPopular = async (req, res) => {
             include: [
                 {
                     model: Surah,
-                    attributes: ["id", "name_simple", "name_translation_id"]
+                    attributes: ["id", "name_arabic", "name_translation_id"]
                 },
                 {
                     model: AyahViews,
