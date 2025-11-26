@@ -106,6 +106,7 @@ app.get('/docs.json', (_req, res) => res.json(openapiSpec));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/surahs', require('./routes/surah.routes.js'));
 app.use('/api/surahs', require('./routes/surahView.routes.js'));
+app.use('/api/popular-ayahs', require('./routes/popularAyahs.routes'));
 app.use('/api/juz', require('./routes/juz.routes.js'));
 app.use('/api/reciters', require('./routes/reciter.routes.js'));
 app.use('/api/daily-ayah', require('./routes/dailyAyah.routes.js'));
