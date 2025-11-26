@@ -25,6 +25,7 @@ exports.getPopular = async (req, res) => {
                         "id",
                         "name",
                         "name_arabic",
+                        "name_simple",
                         "name_translation_id"
                     ]
                 },
