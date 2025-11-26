@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { getPopularAyahs } = require("../controllers/popularAyahs.controller");
+const { getPopular } = require("../controllers/popularAyahs.controller");
 
-router.get("/", getPopularAyahs);
+router.get("/", getPopular);
 
 module.exports = router;
