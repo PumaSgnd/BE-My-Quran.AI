@@ -1,37 +1,53 @@
-const { Ayah, Surah, AyahViews, sequelize } = require("../models");
+const { Ayah, Surah, AyahViews, Translation, sequelize } = require("../models");
 
 exports.getPopular = async (req, res) => {
     try {
+        // ✅ Popular Surah berdasarkan jumlah ayah di surah (pakai verses_count)
         const popularSurahs = await Ayah.findAll({
             include: [
                 {
                     model: Surah,
-                    attributes: ["id", "name_arabic", "name_translation_id"]
+                    attributes: [
+                        "id",
+                        "name",
+                        "name_translation_id",
+                        "name_arabic",
+                        "verses_count"
+                    ]
                 }
             ],
             attributes: [
                 "surah_number",
-                [sequelize.fn("COUNT", sequelize.col("Ayah.id")), "total_ayah"]
+                [sequelize.fn("COUNT", sequelize.col("Ayah.id")), "ayah_count"]
             ],
             group: ["surah_number", "Surah.id"],
-            order: [[sequelize.literal("total_ayah"), "DESC"]],
+            order: [[sequelize.literal("ayah_count"), "DESC"]],
             limit: 5
         });
 
+        // ✅ Popular Ayat berdasarkan total views
         const popularAyahs = await Ayah.findAll({
             include: [
                 {
                     model: Surah,
-                    attributes: ["id", "name_arabic", "name_translation_id"]
+                    attributes: [
+                        "id",
+                        "name",
+                        "name_arabic",
+                        "name_translation_id"
+                    ]
                 },
                 {
                     model: AyahViews,
                     attributes: ["total_views"]
+                },
+                {
+                    model: Translation,
+                    as: "Translations",
+                    attributes: ["translation_text"]
                 }
             ],
-            order: [
-                [AyahViews, "total_views", "DESC"]
-            ],
+            order: [[AyahViews, "total_views", "DESC"]],
             limit: 3
         });
 
