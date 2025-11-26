@@ -113,6 +113,7 @@ app.use('/api/daily-ayah', require('./routes/dailyAyah.routes.js'));
 app.use('/api/auth', require('./routes/auth.routes.js'));
 app.use('/api/bookmarks', require('./routes/bookmark.routes.js'));
 app.use('/api/last-read', require('./routes/lastRead.routes.js'));
+app.use('/api/notes', require('./routes/note.routes'));
 app.use('/api/content', require('./routes/content.routes.js'));
 app.use('/api/learning', require('./routes/learning.routes.js'));
 app.use('/api/tajwid', require('./routes/tajwid.routes.js'));
