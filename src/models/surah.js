@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
         id: { type: DataTypes.INTEGER, primaryKey: true },
         name_simple: DataTypes.STRING,
         name_translation_id: DataTypes.STRING,
-    }, { tableName: 'surahs' });
+    }, { tableName: 'surahs', timestamps: false });
 
     return Surah;
 };

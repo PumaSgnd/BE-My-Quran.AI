@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         verse_key: DataTypes.STRING,
         juz_number: DataTypes.INTEGER,
         surah_number: DataTypes.INTEGER,
-    }, { tableName: 'ayahs' });
+    }, { tableName: 'ayahs', timestamps: false });
 
     return Ayah;
 };
