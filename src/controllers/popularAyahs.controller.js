@@ -8,7 +8,7 @@ exports.getPopular = async (req, res) => {
                 "id",
                 "name",
                 "name_translation_id",
-                "name_arabic",,
+                "name_arabic",
                 "name_simple",
                 "verses_count"
             ],
