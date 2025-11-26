@@ -7,15 +7,14 @@ exports.getPopular = async (req, res) => {
                 {
                     model: Surah,
                     attributes: ["id", "name_arabic", "name_translation_id"]
-                },
-                { model: AyahViews, attributes: [] }
+                }
             ],
             attributes: [
                 "surah_number",
-                [sequelize.fn("SUM", sequelize.col("AyahViews.total_views")), "total_views"]
+                [sequelize.fn("COUNT", sequelize.col("Ayah.id")), "total_ayah"]
             ],
             group: ["surah_number", "Surah.id"],
-            order: [[sequelize.literal("total_views"), "DESC"]],
+            order: [[sequelize.literal("total_ayah"), "DESC"]],
             limit: 10
         });
 
