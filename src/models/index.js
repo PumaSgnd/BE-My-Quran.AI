@@ -2,8 +2,8 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/sequelize");
 
 // Load Models
-const Ayah = require("./ayah.model")(sequelize, DataTypes);
-const Surah = require("./surah.model")(sequelize, DataTypes);
+const Ayah = require("./ayah")(sequelize, DataTypes);
+const Surah = require("./surah")(sequelize, DataTypes);
 const AyahViews = require("./ayahViews.model")(sequelize, DataTypes);
 
 const PrayerTimesCache = require("./prayerTimesCache.model")(sequelize, DataTypes);
