@@ -2,7 +2,6 @@ const { Ayah, Surah, AyahViews, sequelize } = require("../models");
 
 exports.getPopular = async (req, res) => {
     try {
-        // ✅ Popular Surah (group by)
         const popularSurahs = await Ayah.findAll({
             include: [
                 {
@@ -12,15 +11,14 @@ exports.getPopular = async (req, res) => {
                 { model: AyahViews, attributes: [] }
             ],
             attributes: [
-                "surah_id",
+                "surah_number",
                 [sequelize.fn("SUM", sequelize.col("AyahViews.total_views")), "total_views"]
             ],
-            group: ["surah_id", "Surah.id"],
+            group: ["surah_number", "Surah.id"],
             order: [[sequelize.literal("total_views"), "DESC"]],
             limit: 10
         });
 
-        // ✅ Popular Ayah (top 20 ayat)
         const popularAyahs = await Ayah.findAll({
             include: [
                 {
