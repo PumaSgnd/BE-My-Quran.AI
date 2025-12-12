@@ -6,11 +6,12 @@ module.exports = {
             `SELECT h.id, h.book, h.number, h.arab, h.indo,
             c.id AS category_id, c.name AS category
      FROM hadiths h
-     LEFT JOIN hadith_categories c ON c.id = h.category_id
+     LEFT JOIN categories c ON c.id = h.category_id
      WHERE h.id = $1
      LIMIT 1`,
             [id]
         );
+
         return result.rows[0];
     },
 
@@ -19,7 +20,7 @@ module.exports = {
             `SELECT h.id, h.book, h.number, h.arab, h.indo,
             c.id AS category_id, c.name AS category
      FROM hadiths h
-     LEFT JOIN hadith_categories c ON c.id = h.category_id
+     LEFT JOIN categories c ON c.id = h.category_id
      WHERE h.book = $1
      ORDER BY h.number NULLS LAST`,
             [book]
