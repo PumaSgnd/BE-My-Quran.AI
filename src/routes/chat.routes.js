@@ -8,7 +8,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// System prompt biar fokus ke Islam
 const SYSTEM_PROMPT = `
 Anda adalah "My-Quran.AI", asisten yang HANYA menjawab pertanyaan tentang Islam.
 - Jika pertanyaan tidak berkaitan dengan Islam, jawab: 
@@ -61,7 +60,6 @@ router.post("/", async (req, res) => {
 
     const reply = completion.choices[0].message.content;
 
-    // ✅ FIX: tambahkan userId di sini
     await saveMessage(userId, sessionId, "assistant", reply);
 
     res.json({ reply });
