@@ -23,7 +23,7 @@ module.exports = {
       // `id` and `nama`, we add `nama` key (use indo text as name if exists).
       const mapped = list.map(h => ({
         id: h.id,
-        nama: h.indo ? (h.indo.length > 120 ? h.indo.substring(0,120) + '...' : h.indo) : (h.ar ? h.ar.substring(0,80) : ''),
+        nama: h.indo ? (h.indo.length > 120 ? h.indo.substring(0,120) + '...' : h.indo) : (h.arab ? h.arab.substring(0,80) : ''),
         book: h.book,
         number: h.number,
       }));
