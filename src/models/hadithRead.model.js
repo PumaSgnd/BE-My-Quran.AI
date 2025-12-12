@@ -1,21 +1,47 @@
 const pool = require('../config/db');
 
 module.exports = {
-    async markAsRead(hadithId) {
-        await pool.query(
-            `INSERT INTO hadith_reads (hadith_id)
-             VALUES ($1)
-             ON CONFLICT (hadith_id) DO NOTHING`,
-            [hadithId]
-        );
-        return true;
-    },
+  async markAsRead(userId, hadithId) {
+    await pool.query(
+      `INSERT INTO hadith_reads (user_id, hadith_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, hadith_id) DO NOTHING`,
+      [userId, hadithId]
+    );
+    return true;
+  },
 
-    async isRead(hadithId) {
-        const res = await pool.query(
-            `SELECT hadith_id FROM hadith_reads WHERE hadith_id = $1`,
-            [hadithId]
-        );
-        return res.rowCount > 0;
-    }
+  async isRead(userId, hadithId) {
+    const res = await pool.query(
+      `SELECT 1 FROM hadith_reads
+       WHERE user_id = $1 AND hadith_id = $2`,
+      [userId, hadithId]
+    );
+    return res.rowCount > 0;
+  },
+
+  async deleteRead(userId, hadithId) {
+    await pool.query(
+      `DELETE FROM hadith_reads WHERE user_id = $1 AND hadith_id = $2`,
+      [userId, hadithId]
+    );
+    return true;
+  },
+
+  async getAllForUser(userId) {
+    const res = await pool.query(
+      `SELECT hr.hadith_id, hr.read_at, h.indo AS nama, h.book
+       FROM hadith_reads hr
+       JOIN hadiths h ON h.id = hr.hadith_id
+       WHERE hr.user_id = $1
+       ORDER BY hr.read_at DESC`,
+      [userId]
+    );
+    return res.rows.map(r => ({
+      hadith_id: r.hadith_id,
+      read_at: r.read_at,
+      nama: r.nama || '',
+      book: r.book,
+    }));
+  },
 };

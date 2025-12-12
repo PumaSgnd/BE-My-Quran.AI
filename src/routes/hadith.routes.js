@@ -1,14 +1,22 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/hadith.controller');
+const { isLoggedIn } = require('../middlewares/auth.middleware.js');
 
-// GET /api/hadith/bukhari      -> daftar hadits
-// GET /api/hadith/bukhari/10   -> hadits nomor 10
-router.get('/:book/:number?', ctrl.getHadith);
+// Public
+router.get('/categories', ctrl.getCategories);
+router.get('/category/:book', ctrl.getByCategory);
 
-// POST /api/hadith/123/note
-router.post('/:id/note', ctrl.saveNote);
+// Attach user if token exists (to include read/note when viewing detail)
+router.get('/:id', isLoggedIn, ctrl.getHadith);
 
-// POST /api/hadith/123/read
-router.post('/:id/read', ctrl.markRead);
+// Protected endpoints
+router.get('/note', isLoggedIn, ctrl.getNotes);
+router.post('/note', isLoggedIn, ctrl.saveNote);
+router.delete('/note', isLoggedIn, ctrl.deleteNote);
+
+router.get('/read', isLoggedIn, ctrl.getReadList);
+router.post('/read', isLoggedIn, ctrl.markRead);
+router.delete('/read', isLoggedIn, ctrl.deleteRead);
 
 module.exports = router;
+
