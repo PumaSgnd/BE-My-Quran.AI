@@ -23,12 +23,17 @@ module.exports = {
             // `id` and `nama`, we add `nama` key (use indo text as name if exists).
             const mapped = list.map(h => ({
                 id: h.id,
-                nama: h.indo ? (h.indo.length > 120 ? h.indo.substring(0, 120) + '...' : h.indo) : (h.arab ? h.arab.substring(0, 80) : ''),
+                nama: h.indo
+                    ? (h.indo.length > 120 ? h.indo.substring(0, 120) + '...' : h.indo)
+                    : (h.arab ? h.arab.substring(0, 80) : ''),
                 book: h.book,
                 number: h.number,
                 arab: h.arab,
                 indo: h.indo,
-                category: h.category,
+                category: h.category ? {
+                    id: h.category_id,
+                    name: h.category
+                } : null
             }));
             return res.json(mapped);
         } catch (err) {
@@ -51,7 +56,13 @@ module.exports = {
                 hadith.note = await HadithNote.getNote(userId, hadith.id);
             }
 
-            return res.json(hadith);
+            return res.json({
+                ...hadith,
+                category: hadith.category ? {
+                    id: hadith.category_id,
+                    name: hadith.category
+                } : null
+            });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: 'Server error' });
