@@ -2,22 +2,28 @@ const router = require('express').Router();
 const ctrl = require('../controllers/hadith.controller');
 const { isLoggedIn } = require('../middlewares/auth.middleware.js');
 
-// Public
+// ---------- PUBLIC ----------
+// Get list of books/categories
 router.get('/categories', ctrl.getCategories);
+
+// Get all hadiths by book
 router.get('/category/:book', ctrl.getByCategory);
 
-// Protected lists
-router.get('/note', isLoggedIn, ctrl.getNotes);
-router.get('/read', isLoggedIn, ctrl.getReadList);
+// ---------- PROTECTED (require login) ----------
+router.use(isLoggedIn);
 
-// Protected write
-router.post('/note', isLoggedIn, ctrl.saveNote);
-router.delete('/note', isLoggedIn, ctrl.deleteNote);
+// Notes
+router.get('/note', ctrl.getNotes);
+router.post('/note', ctrl.saveNote);
+router.delete('/note', ctrl.deleteNote);
 
-router.post('/read', isLoggedIn, ctrl.markRead);
-router.delete('/read', isLoggedIn, ctrl.deleteRead);
+// Read status
+router.get('/read', ctrl.getReadList);
+router.post('/read', ctrl.markRead);
+router.delete('/read', ctrl.deleteRead);
 
-// Detail hadith — PUT PALING BAWAH
-router.get('/:id', isLoggedIn, ctrl.getHadith);
+// ---------- DETAIL HADITH ----------
+// Letakkan paling bawah supaya tidak tertangkap route /category/:book
+router.get('/:id', ctrl.getHadith);
 
 module.exports = router;

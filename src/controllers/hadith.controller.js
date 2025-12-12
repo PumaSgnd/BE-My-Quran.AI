@@ -3,153 +3,147 @@ const HadithNote = require('../models/hadithNote.model');
 const HadithRead = require('../models/hadithRead.model');
 
 module.exports = {
-    // GET /api/hadith/categories
-    async getCategories(req, res) {
-        try {
-            const cats = await Hadith.getCategoriesWithCount();
-            return res.json(cats);
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+  // GET /api/hadith/categories
+  async getCategories(req, res) {
+    try {
+      const cats = await Hadith.getCategoriesWithCount();
+      res.json(cats);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
 
-    // GET /api/hadith/category/:book
-    async getByCategory(req, res) {
-        try {
-            const book = req.params.book;
-            const list = await Hadith.findByBook(book);
-            // For compatibility with your frontend's HadithListPage which expects
-            // `id` and `nama`, we add `nama` key (use indo text as name if exists).
-            const mapped = list.map(h => ({
-                id: h.id,
-                nama: h.indo
-                    ? (h.indo.length > 120 ? h.indo.substring(0, 120) + '...' : h.indo)
-                    : (h.arab ? h.arab.substring(0, 80) : ''),
-                book: h.book,
-                number: h.number,
-                arab: h.arab,
-                indo: h.indo,
-                category: h.category ? {
-                    id: h.category_id,
-                    name: h.category
-                } : null
-            }));
-            return res.json(mapped);
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+  // GET /api/hadith/category/:book
+  async getByCategory(req, res) {
+    try {
+      const book = req.params.book;
+      const list = await Hadith.findByBook(book);
 
-    // GET /api/hadith/:id
-    async getHadith(req, res) {
-        try {
-            const { id } = req.params;
-            const userId = req.user?.id;
+      const mapped = list.map(h => ({
+        id: h.id,
+        number: h.number,
+        arab: h.arab,
+        indo: h.indo,
+        section: h.section_id ?? null,
+        category: h.category ? { id: h.category_id, name: h.category } : null,
+        nama: h.indo
+          ? h.indo.length > 120 ? h.indo.substring(0,120)+'...' : h.indo
+          : h.arab ? h.arab.substring(0,80) : ''
+      }));
 
-            const hadith = await Hadith.findById(id);
-            if (!hadith) return res.status(404).json({ message: 'Hadith tidak ditemukan' });
+      res.json(mapped);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
 
-            if (userId) {
-                hadith.read = await HadithRead.isRead(userId, hadith.id);
-                hadith.note = await HadithNote.getNote(userId, hadith.id);
-            }
+  // GET /api/hadith/:id
+  async getHadith(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
 
-            return res.json({
-                ...hadith,
-                category: hadith.category ? {
-                    id: hadith.category_id,
-                    name: hadith.category
-                } : null
-            });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+      const hadith = await Hadith.findById(id);
+      if (!hadith) return res.status(404).json({ message: 'Hadith tidak ditemukan' });
 
-    // --- NOTES ---
-    // GET /api/hadith/note
-    async getNotes(req, res) {
-        try {
-            const userId = req.user.id;
-            const rows = await HadithNote.getAllForUser(userId);
-            return res.json(rows);
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+      if (userId) {
+        hadith.read = await HadithRead.isRead(userId, hadith.id);
+        hadith.note = await HadithNote.getNote(userId, hadith.id);
+      }
 
-    // POST /api/hadith/note  body { hadith_id, note }
-    async saveNote(req, res) {
-        try {
-            const userId = req.user.id;
-            const { hadith_id, note } = req.body;
-            if (!hadith_id || note === undefined) {
-                return res.status(400).json({ message: 'hadith_id and note are required' });
-            }
-            const saved = await HadithNote.saveNote(userId, hadith_id, note);
-            return res.json(saved);
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+      res.json({
+        id: hadith.id,
+        number: hadith.number,
+        arab: hadith.arab,
+        indo: hadith.indo,
+        section: hadith.section_id ?? null,
+        category: hadith.category ? { id: hadith.category_id, name: hadith.category } : null,
+        read: hadith.read ?? false,
+        note: hadith.note ?? null
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
 
-    // DELETE /api/hadith/note  body { hadith_id }
-    async deleteNote(req, res) {
-        try {
-            const userId = req.user.id;
-            const { hadith_id } = req.body;
-            if (!hadith_id) return res.status(400).json({ message: 'hadith_id required' });
-            await HadithNote.deleteNote(userId, hadith_id);
-            return res.json({ message: 'Catatan berhasil dihapus' });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+  // --- NOTES ---
+  async getNotes(req, res) {
+    try {
+      const userId = req.user.id;
+      const notes = await HadithNote.getAllForUser(userId);
+      res.json(notes);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
 
-    // --- READ ---
-    // GET /api/hadith/read
-    async getReadList(req, res) {
-        try {
-            const userId = req.user.id;
-            const rows = await HadithRead.getAllForUser(userId);
-            return res.json(rows);
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+  async saveNote(req, res) {
+    try {
+      const userId = req.user.id;
+      const { hadith_id, note } = req.body;
+      if (!hadith_id || note === undefined) {
+        return res.status(400).json({ message: 'hadith_id and note are required' });
+      }
+      const saved = await HadithNote.saveNote(userId, hadith_id, note);
+      res.json(saved);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
 
-    // POST /api/hadith/read  body { hadith_id }
-    async markRead(req, res) {
-        try {
-            const userId = req.user.id;
-            const { hadith_id } = req.body;
-            if (!hadith_id) return res.status(400).json({ message: 'hadith_id required' });
-            await HadithRead.markAsRead(userId, hadith_id);
-            return res.json({ message: 'Hadith ditandai sudah dibaca' });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+  async deleteNote(req, res) {
+    try {
+      const userId = req.user.id;
+      const { hadith_id } = req.body;
+      if (!hadith_id) return res.status(400).json({ message: 'hadith_id required' });
+      await HadithNote.deleteNote(userId, hadith_id);
+      res.json({ message: 'Catatan berhasil dihapus' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
 
-    // DELETE /api/hadith/read  body { hadith_id }
-    async deleteRead(req, res) {
-        try {
-            const userId = req.user.id;
-            const { hadith_id } = req.body;
-            if (!hadith_id) return res.status(400).json({ message: 'hadith_id required' });
-            await HadithRead.deleteRead(userId, hadith_id);
-            return res.json({ message: 'Status read berhasil dihapus' });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Server error' });
-        }
-    },
+  // --- READ ---
+  async getReadList(req, res) {
+    try {
+      const userId = req.user.id;
+      const list = await HadithRead.getAllForUser(userId);
+      res.json(list);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
+
+  async markRead(req, res) {
+    try {
+      const userId = req.user.id;
+      const { hadith_id } = req.body;
+      if (!hadith_id) return res.status(400).json({ message: 'hadith_id required' });
+      await HadithRead.markAsRead(userId, hadith_id);
+      res.json({ message: 'Hadith ditandai sudah dibaca' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
+
+  async deleteRead(req, res) {
+    try {
+      const userId = req.user.id;
+      const { hadith_id } = req.body;
+      if (!hadith_id) return res.status(400).json({ message: 'hadith_id required' });
+      await HadithRead.deleteRead(userId, hadith_id);
+      res.json({ message: 'Status read berhasil dihapus' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
 };

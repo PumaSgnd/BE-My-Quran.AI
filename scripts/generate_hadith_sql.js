@@ -2,11 +2,10 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-console.log("🚀 Generating full SQL dump with FIXED CDN URLs...\n");
+console.log("🚀 Generating FULL SQL with Arabic + Indonesia + Sections...\n");
 
 const OUTPUT = path.join(__dirname, "../hadith_full_import.sql");
 
-// Mapping kitab → edition Arab + Indonesia
 const BOOKS = {
   bukhari: { ar: "ara-bukhari", id: "ind-bukhari" },
   muslim: { ar: "ara-muslim", id: "ind-muslim" },
@@ -26,49 +25,124 @@ async function fetchJson(url) {
   try {
     const res = await axios.get(url, { timeout: 20000 });
     return res.data;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
 
 async function main() {
-  let SQL = "INSERT INTO hadiths (book, number, arab, indo) VALUES\n";
+  let SQL = "-- INSERT BOOKS\n";
 
+  const validBooks = {};
+
+  // ---- INSERT BOOKS ----
   for (const kitab of Object.keys(BOOKS)) {
     console.log(`📘 Fetching kitab: ${kitab}`);
 
-    const arUrl = `${BASE}/${BOOKS[kitab].ar}.json`;
-    const idUrl = `${BASE}/${BOOKS[kitab].id}.json`;
+    const ar = await fetchJson(`${BASE}/${BOOKS[kitab].ar}.json`);
+    const id = await fetchJson(`${BASE}/${BOOKS[kitab].id}.json`);
 
-    const arab = await fetchJson(arUrl);
-    const indo = await fetchJson(idUrl);
-
-    if (!arab || !indo) {
-      console.log(`⚠️ Skip ${kitab} (JSON tidak ditemukan di CDN)\n`);
+    if (!ar || !id) {
+      console.log(`❌ Skip ${kitab} (missing JSON)\n`);
       continue;
     }
 
-    const arabList = arab.hadiths;
-    const indoList = indo.hadiths;
+    validBooks[kitab] = true;
 
-    arabList.forEach((h, idx) => {
-      const num = h.hadithnumber;
+    const meta = ar.metadata || {};
+    const sections = [];
 
-      const textAr = h.text?.replace(/'/g, "''") || "";
-      const textId = indoList[idx]?.text?.replace(/'/g, "''") || "";
+    const names = meta.sections || {}; // nama bab
+    const details = meta.section_details || {}; // range hadith
 
-      SQL += `('${kitab}', ${num}, '${textAr}', '${textId}'),\n`;
-    });
+    // CASE 1: kitab punya section_details lengkap
+    if (Object.keys(details).length > 0) {
+      for (const sid of Object.keys(details)) {
+        sections.push({
+          id: Number(sid),
+          name: names[sid] || "",
+          first: details[sid].hadithnumber_first || null,
+          last: details[sid].hadithnumber_last || null,
+        });
+      }
+    }
 
-    console.log(`✅ ${kitab} OK (${arabList.length} hadith loaded)\n`);
+    // CASE 2: hanya punya sections (malik, nasai)
+    else if (Object.keys(names).length > 0) {
+      for (const sid of Object.keys(names)) {
+        sections.push({
+          id: Number(sid),
+          name: names[sid],
+          first: null,
+          last: null,
+        });
+      }
+    }
+
+    const sectionsJson = JSON.stringify(sections).replace(/'/g, "''");
+
+    SQL += `INSERT INTO books (slug, title, sections) VALUES ('${kitab}', '${meta.name}', '${sectionsJson}');\n`;
   }
 
-  // Cleaning SQL (remove last comma → add semicolon)
-  SQL = SQL.trim().replace(/,$/, ";");
+  // ---- INSERT HADITHS ----
+  SQL += `\n-- INSERT HADITHS\n`;
+  SQL += `INSERT INTO hadith (book_id, number, arab, indo, section)\nVALUES\n`;
+
+  const values = [];
+
+  for (const kitab of Object.keys(BOOKS)) {
+    if (!validBooks[kitab]) continue;
+
+    const ar = await fetchJson(`${BASE}/${BOOKS[kitab].ar}.json`);
+    const id = await fetchJson(`${BASE}/${BOOKS[kitab].id}.json`);
+
+    const meta = ar.metadata || {};
+
+    const details = meta.section_details || {};
+    const sections = [];
+
+    // section ranges
+    for (const sid of Object.keys(details)) {
+      sections.push({
+        id: Number(sid),
+        first: details[sid].hadithnumber_first,
+        last: details[sid].hadithnumber_last,
+      });
+    }
+
+    // index search
+    ar.hadiths.forEach((h, i) => {
+      const num = h.hadithnumber;
+
+      const arab = (h.text || "").replace(/'/g, "''");
+      const indo = (id.hadiths[i]?.text || "").replace(/'/g, "''");
+
+      // determine section
+      let secId = null;
+      for (const sec of sections) {
+        if (num >= sec.first && num <= sec.last) {
+          secId = sec.id;
+          break;
+        }
+      }
+
+      values.push(`(
+        (SELECT id FROM books WHERE slug='${kitab}' LIMIT 1),
+        ${num},
+        '${arab}',
+        '${indo}',
+        ${secId}
+      )`);
+    });
+
+    console.log(`✅ ${kitab} OK (${ar.hadiths.length} hadith)\n`);
+  }
+
+  SQL += values.join(",\n") + ";";
 
   await fs.writeFile(OUTPUT, SQL, "utf8");
 
-  console.log(`🎉 Done. File generated: ${OUTPUT}`);
+  console.log(`🎉 DONE → Generated: ${OUTPUT}`);
 }
 
 main();
