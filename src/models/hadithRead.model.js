@@ -30,7 +30,7 @@ module.exports = {
 
   async getAllForUser(userId) {
     const res = await pool.query(
-      `SELECT hr.hadith_id, hr.read_at, h.indo AS nama, h.book
+      `SELECT hr.hadith_id, hr.read_at, h.indo AS nama, h.book_id
        FROM hadith_reads hr
        JOIN hadith h ON h.id = hr.hadith_id
        WHERE hr.user_id = $1
