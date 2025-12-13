@@ -64,13 +64,18 @@ module.exports = {
 
   async getHadith(req, res) {
     try {
-      const hadith = await Hadith.findById(req.params.id);
-      if (!hadith) return res.status(404).json({ message: 'Hadith not found' });
+      const id = parseInt(req.params.id, 10);
 
-      res.json(hadith);
+      const { rows } = await db.query(SQL_GET_HADITH, [id]);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "Hadith not found" });
+      }
+
+      res.json(rows[0]);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: "Server error" });
     }
   },
 
