@@ -1,3 +1,4 @@
+const Book = require('../models/book.model');
 const Hadith = require('../models/hadith.model');
 const HadithNote = require('../models/hadithNote.model');
 const HadithRead = require('../models/hadithRead.model');
@@ -16,8 +17,14 @@ module.exports = {
   // GET /api/hadith/category/:book
   async getByCategory(req, res) {
     try {
-      const list = await Hadith.findByBook(req.params.book);
-      res.json(list);
+      const book = await Book.findBySlug(req.params.book);
+
+      if (!book || !book.sections) {
+        return res.status(404).json({ message: 'Sections not found' });
+      }
+
+      // 🔥 BALIKIN SECTION, BUKAN HADITH
+      res.json(book.sections);
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Server error' });
