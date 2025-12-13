@@ -36,7 +36,7 @@ module.exports = {
     const result = await pool.query(
       `SELECT hn.hadith_id, hn.note, h.indo AS nama, h.arab AS arab, h.book
        FROM hadith_notes hn
-       JOIN hadiths h ON h.id = hn.hadith_id
+       JOIN hadith h ON h.id = hn.hadith_id
        WHERE hn.user_id = $1
        ORDER BY hn.updated_at DESC`,
       [userId]
