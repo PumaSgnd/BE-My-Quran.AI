@@ -20,7 +20,7 @@ module.exports = {
             JOIN hadith_grade_relations hgr ON hgr.hadith_id = h.id
             JOIN hadith_graders hg          ON hg.id = hgr.grader_id
             JOIN hadith_grades g            ON g.id = hgr.grade_id
-            WHERE h.id = 23851
+            WHERE h.id = $1
             GROUP BY h.id;
         `, [id]);
 
