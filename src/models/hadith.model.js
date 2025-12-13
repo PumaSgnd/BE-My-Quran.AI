@@ -4,28 +4,24 @@ module.exports = {
     async findById(id) {
         const result = await pool.query(`
             SELECT
-            h.id,
+            h.id AS hadith_id,
             h.book_id,
             h.number,
             h.arab,
             h.indo,
-            h.section,
-            COALESCE(
-                json_agg(
+            json_agg(
                 json_build_object(
-                    'grader', hg.name,
-                    'grade', gr.name
+                'grader', hg.name,
+                'grade', g.name
                 )
-                ) FILTER (WHERE hg.id IS NOT NULL),
-                '[]'
+                ORDER BY hg.name
             ) AS grades
             FROM hadith h
-            LEFT JOIN hadith_grade_relations hgr ON hgr.hadith_id = h.id
-            LEFT JOIN hadith_graders hg ON hg.id = hgr.grader_id
-            LEFT JOIN hadith_grades gr ON gr.id = hgr.grade_id
-            WHERE h.id = $1
-            GROUP BY h.id
-            LIMIT 1
+            JOIN hadith_grade_relations hgr ON hgr.hadith_id = h.id
+            JOIN hadith_graders hg          ON hg.id = hgr.grader_id
+            JOIN hadith_grades g            ON g.id = hgr.grade_id
+            WHERE h.id = 23851
+            GROUP BY h.id;
         `, [id]);
 
         return result.rows[0];
