@@ -9,6 +9,11 @@ router.get('/categories', ctrl.getCategories);
 // Get all hadiths by book
 router.get('/category/:book', ctrl.getByCategory);
 
+router.get(
+    '/category/:book/section/:id',
+    ctrl.getBySection
+);
+
 // ---------- PROTECTED (require login) ----------
 router.use(isLoggedIn);
 

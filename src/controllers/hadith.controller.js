@@ -28,8 +28,8 @@ module.exports = {
         section: h.section_id ?? null,
         category: h.category ? { id: h.category_id, name: h.category } : null,
         nama: h.indo
-          ? h.indo.length > 120 ? h.indo.substring(0,120)+'...' : h.indo
-          : h.arab ? h.arab.substring(0,80) : ''
+          ? h.indo.length > 120 ? h.indo.substring(0, 120) + '...' : h.indo
+          : h.arab ? h.arab.substring(0, 80) : ''
       }));
 
       res.json(mapped);
@@ -37,6 +37,26 @@ module.exports = {
       console.error(err);
       res.status(500).json({ message: 'Server error' });
     }
+  },
+
+  async getBySection (req, res) {
+    const { book, id } = req.params;
+
+    const section = sections[book]?.find(
+      s => s.id === Number(id)
+    );
+
+    if (!section) {
+      return res.status(404).json({ message: 'Section not found' });
+    }
+
+    const hadiths = await Hadith.findByBookAndRange(
+      book,
+      section.first,
+      section.last
+    );
+
+    res.json(hadiths);
   },
 
   // GET /api/hadith/:id
