@@ -3,11 +3,30 @@ const pool = require('../config/db');
 module.exports = {
     async findById(id) {
         const result = await pool.query(`
-      SELECT id, book_id, number, arab, indo, section
-      FROM hadith
-      WHERE id = $1
-      LIMIT 1
-    `, [id]);
+            SELECT
+            h.id,
+            h.book_id,
+            h.number,
+            h.arab,
+            h.indo,
+            h.section,
+            COALESCE(
+                json_agg(
+                json_build_object(
+                    'grader', hg.name,
+                    'grade', gr.name
+                )
+                ) FILTER (WHERE hg.id IS NOT NULL),
+                '[]'
+            ) AS grades
+            FROM hadith h
+            LEFT JOIN hadith_grade_relations hgr ON hgr.hadith_id = h.id
+            LEFT JOIN hadith_graders hg ON hg.id = hgr.grader_id
+            LEFT JOIN hadith_grades gr ON gr.id = hgr.grade_id
+            WHERE h.id = $1
+            GROUP BY h.id
+            LIMIT 1
+        `, [id]);
 
         return result.rows[0];
     },
