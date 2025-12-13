@@ -1,4 +1,4 @@
-const Book = require('../models/book.model');
+const Book = require('../models/books.model');
 const Hadith = require('../models/hadith.model');
 const HadithNote = require('../models/hadithNote.model');
 const HadithRead = require('../models/hadithRead.model');
