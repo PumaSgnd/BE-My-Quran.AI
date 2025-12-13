@@ -5,7 +5,7 @@ module.exports = {
         const result = await pool.query(
             `SELECT h.id, h.book, h.number, h.arab, h.indo,
             c.id AS category_id, c.name AS category
-     FROM hadiths h
+     FROM hadith h
      LEFT JOIN categories c ON c.id = h.category_id
      WHERE h.id = $1
      LIMIT 1`,
@@ -19,7 +19,7 @@ module.exports = {
         const result = await pool.query(
             `SELECT h.id, h.book, h.number, h.arab, h.indo,
             c.id AS category_id, c.name AS category
-     FROM hadiths h
+     FROM hadith h
      LEFT JOIN categories c ON c.id = h.category_id
      WHERE h.book = $1
      ORDER BY h.number NULLS LAST`,
@@ -32,7 +32,7 @@ module.exports = {
         // Return array { title, count }
         const result = await pool.query(
             `SELECT book AS title, COUNT(*)::int AS count
-       FROM hadiths
+       FROM hadith
        GROUP BY book
        ORDER BY count DESC`
         );
