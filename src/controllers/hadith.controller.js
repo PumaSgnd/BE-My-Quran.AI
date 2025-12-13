@@ -3,7 +3,6 @@ const HadithNote = require('../models/hadithNote.model');
 const HadithRead = require('../models/hadithRead.model');
 
 module.exports = {
-  // GET /api/hadith/categories
   async getCategories(req, res) {
     try {
       const cats = await Hadith.getCategoriesWithCount();
@@ -17,79 +16,57 @@ module.exports = {
   // GET /api/hadith/category/:book
   async getByCategory(req, res) {
     try {
-      const book = req.params.book;
-      const list = await Hadith.findByBook(book);
-
-      const mapped = list.map(h => ({
-        id: h.id,
-        number: h.number,
-        arab: h.arab,
-        indo: h.indo,
-        section: h.section_id ?? null,
-        category: h.category ? { id: h.category_id, name: h.category } : null,
-        nama: h.indo
-          ? h.indo.length > 120 ? h.indo.substring(0, 120) + '...' : h.indo
-          : h.arab ? h.arab.substring(0, 80) : ''
-      }));
-
-      res.json(mapped);
+      const list = await Hadith.findByBook(req.params.book);
+      res.json(list);
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Server error' });
     }
   },
 
-  async getBySection (req, res) {
-    const { book, id } = req.params;
-
-    const section = sections[book]?.find(
-      s => s.id === Number(id)
-    );
-
-    if (!section) {
-      return res.status(404).json({ message: 'Section not found' });
-    }
-
-    const hadiths = await Hadith.findByBookAndRange(
-      book,
-      section.first,
-      section.last
-    );
-
-    res.json(hadiths);
-  },
-
-  // GET /api/hadith/:id
-  async getHadith(req, res) {
+  // 🔥 GET /api/hadith/category/:book/section/:id
+  async getBySection(req, res) {
     try {
-      const { id } = req.params;
-      const userId = req.user?.id;
+      const { book, id } = req.params;
 
-      const hadith = await Hadith.findById(id);
-      if (!hadith) return res.status(404).json({ message: 'Hadith tidak ditemukan' });
-
-      if (userId) {
-        hadith.read = await HadithRead.isRead(userId, hadith.id);
-        hadith.note = await HadithNote.getNote(userId, hadith.id);
+      const bookData = await Book.findBySlug(book);
+      if (!bookData || !bookData.sections) {
+        return res.status(404).json({ message: 'Book or sections not found' });
       }
 
-      res.json({
-        id: hadith.id,
-        number: hadith.number,
-        arab: hadith.arab,
-        indo: hadith.indo,
-        section: hadith.section_id ?? null,
-        category: hadith.category ? { id: hadith.category_id, name: hadith.category } : null,
-        read: hadith.read ?? false,
-        note: hadith.note ?? null
-      });
+      const section = bookData.sections.find(
+        s => String(s.id) === String(id)
+      );
+
+      if (!section) {
+        return res.status(404).json({ message: 'Section not found' });
+      }
+
+      const hadiths = await Hadith.findByBookAndRange(
+        book,
+        section.first,
+        section.last
+      );
+
+      res.json(hadiths);
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Server error' });
     }
   },
 
-  // --- NOTES ---
+  async getHadith(req, res) {
+    try {
+      const hadith = await Hadith.findById(req.params.id);
+      if (!hadith) return res.status(404).json({ message: 'Hadith not found' });
+
+      res.json(hadith);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
+
   async getNotes(req, res) {
     try {
       const userId = req.user.id;
