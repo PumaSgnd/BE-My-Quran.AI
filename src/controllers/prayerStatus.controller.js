@@ -8,7 +8,7 @@ exports.getRead = async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await db.query(
-      `SELECT r.prayer_id, p.nama, r.created_at
+      `SELECT r.prayer_id, p.judul, r.created_at
        FROM prayer_read r
        JOIN prayer p ON r.prayer_id = p.id
        WHERE r.user_id = $1
@@ -64,7 +64,7 @@ exports.getFavorite = async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await db.query(
-      `SELECT f.prayer_id, p.nama, f.created_at
+      `SELECT f.prayer_id, p.judul, f.created_at
        FROM prayer_favorite f
        JOIN prayer p ON f.prayer_id = p.id
        WHERE f.user_id = $1
@@ -120,7 +120,7 @@ exports.getNote = async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await db.query(
-      `SELECT n.id, n.prayer_id, p.nama, n.note, n.updated_at
+      `SELECT n.id, n.prayer_id, p.judul, n.note, n.updated_at
        FROM prayer_note n
        JOIN prayer p ON n.prayer_id = p.id
        WHERE n.user_id = $1
