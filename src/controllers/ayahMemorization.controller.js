@@ -140,6 +140,7 @@ const deleteAyahMemorization = async (req, res) => {
 
 module.exports = {
     getAyahMemorizationBySurah,
+    getMemorizationCounts,
     setAyahMemorizationStatus,
     deleteAyahMemorization,
 };
