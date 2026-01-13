@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const STATUS = require('../constants/memorizationStatus');
+const STATUS = require('../utils/memorizationStatus');
 
 const getAyahMemorizationBySurah = async (req, res) => {
     try {
