@@ -21,6 +21,46 @@ const getAyahMemorizationBySurah = async (req, res) => {
     }
 };
 
+const getMemorizationCounts = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const { rows } = await db.query(
+            `
+            SELECT status, COUNT(*)::int AS total
+            FROM ayah_memorizations
+            WHERE user_id = $1
+            GROUP BY status
+            `,
+            [userId]
+        );
+
+        const result = {
+            dihafalkan: 0,
+            latihan: 0,
+            untuk_dihafalkan: 0,
+        };
+
+        rows.forEach(row => {
+            if (row.status === STATUS.MEMORIZED) {
+                result.dihafalkan = row.total;
+            } else if (row.status === STATUS.NEED_PRACTICE) {
+                result.latihan = row.total;
+            } else if (row.status === STATUS.TO_MEMORIZE) {
+                result.untuk_dihafalkan = row.total;
+            }
+        });
+
+        return res.json({
+            status: 'success',
+            data: result,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    }
+};
+
 const setAyahMemorizationStatus = async (req, res) => {
     try {
         const userId = req.user.id;

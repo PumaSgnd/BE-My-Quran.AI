@@ -10,6 +10,11 @@ router.get(
     controller.getAyahMemorizationBySurah
 );
 
+router.get(
+    '/counts',
+    controller.getMemorizationCounts
+);
+
 router.post(
     '/',
     controller.setAyahMemorizationStatus
