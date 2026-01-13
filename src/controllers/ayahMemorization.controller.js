@@ -25,6 +25,13 @@ const getMemorizationCounts = async (req, res) => {
     try {
         const userId = req.user.id;
 
+        // TOTAL AYAT QUR'AN
+        const totalResult = await db.query(
+            `SELECT COUNT(*)::int AS total FROM ayahs`
+        );
+        const totalAyah = totalResult.rows[0].total;
+
+        // AYAT YANG SUDAH ADA STATUS
         const { rows } = await db.query(
             `
             SELECT status, COUNT(*)::int AS total
@@ -35,25 +42,27 @@ const getMemorizationCounts = async (req, res) => {
             [userId]
         );
 
-        const result = {
-            dihafalkan: 0,
-            latihan: 0,
-            untuk_dihafalkan: 0,
-        };
+        let dihafalkan = 0;
+        let latihan = 0;
 
         rows.forEach(row => {
             if (row.status === STATUS.MEMORIZED) {
-                result.dihafalkan = row.total;
-            } else if (row.status === STATUS.NEED_PRACTICE) {
-                result.latihan = row.total;
-            } else if (row.status === STATUS.TO_MEMORIZE) {
-                result.untuk_dihafalkan = row.total;
+                dihafalkan = row.total;
+            }
+            if (row.status === STATUS.NEED_PRACTICE) {
+                latihan = row.total;
             }
         });
 
+        const untukDihafalkan = totalAyah - (dihafalkan + latihan);
+
         return res.json({
             status: 'success',
-            data: result,
+            data: {
+                dihafalkan,
+                latihan,
+                untuk_dihafalkan: Math.max(untukDihafalkan, 0),
+            },
         });
     } catch (err) {
         console.error(err);
