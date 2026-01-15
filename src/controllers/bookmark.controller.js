@@ -16,23 +16,22 @@ const getMyBookmarks = async (req, res) => {
                 a.verse_key,
                 a.text AS text_ar,
 
-                -- yang sudah ada
                 s.name_simple AS surah_name,
 
-                -- 🆕 tambahan baru
                 s.name AS surah_name_full,
-                t.translation_text AS translation_text
+                t.translation_text AS translation_text,
+
+                s.name_translation_id AS surah_translation_name
 
             FROM bookmarks b
             JOIN ayahs a   ON b.ayah_id = a.id
             JOIN surahs s  ON a.surah_number = s.id
 
-            -- 🆕 join translations
             LEFT JOIN translations t ON t.ayah_id = a.id
 
             WHERE b.user_id = $1
             ORDER BY b.created_at DESC
-            `;
+        `;
         const { rows } = await db.query(query, [userId]);
         return res.json({ status: 'success', data: rows });
     } catch (err) {
