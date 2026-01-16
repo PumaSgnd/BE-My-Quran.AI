@@ -11,7 +11,7 @@ const getAyahInspiration = async (req, res) => {
                 s.name AS surah_name,
                 a.ayah_number,
                 a.text,
-                ai.image_url
+                ai.image_url,
                 t.translation_text AS translation_text,
             FROM ayahs a
             JOIN ayah_images ai ON ai.ayah_id = a.id
