@@ -15,23 +15,17 @@ const getAyahInspiration = async (req, res) => {
             FROM ayahs a
             JOIN ayah_images ai ON ai.ayah_id = a.id
             JOIN surahs s ON s.id = a.surah_number
+            ORDER BY md5(a.id::text || CURRENT_DATE::text)
+            LIMIT $1
         `;
 
-        const values = [];
-
-        query += ' ORDER BY RANDOM()';
-
-        if (limit) {
-            query += ' LIMIT $1';
-            values.push(parseInt(limit));
-        } else {
-            query += ' LIMIT 30';
-        }
+        const values = [parseInt(limit) || 30];
 
         const { rows } = await db.query(query, values);
 
         return res.json({
             status: 'success',
+            date: new Date().toISOString().slice(0,10),
             total: rows.length,
             data: rows,
         });
