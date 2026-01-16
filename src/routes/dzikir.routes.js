@@ -3,6 +3,6 @@ const { getDzikir } = require('../controllers/dzikir.controller');
 
 const router = express.Router();
 
-router.get('/dzikir', getDzikir);
+router.get('/', getDzikir);
 
 module.exports = router;
