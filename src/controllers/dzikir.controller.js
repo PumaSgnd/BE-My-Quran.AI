@@ -9,7 +9,6 @@ const getDzikir = async (req, res) => {
                 id,
                 type,
                 arab,
-                latin,
                 indo,
                 ulang
             FROM dzikir
