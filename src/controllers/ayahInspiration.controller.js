@@ -25,7 +25,7 @@ const getAyahInspiration = async (req, res) => {
             query += ' LIMIT $1';
             values.push(parseInt(limit));
         } else {
-            query += ' LIMIT 20';
+            query += ' LIMIT 30';
         }
 
         const { rows } = await db.query(query, values);
