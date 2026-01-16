@@ -12,9 +12,11 @@ const getAyahInspiration = async (req, res) => {
                 a.ayah_number,
                 a.text,
                 ai.image_url
+                t.translation_text AS translation_text,
             FROM ayahs a
             JOIN ayah_images ai ON ai.ayah_id = a.id
             JOIN surahs s ON s.id = a.surah_number
+            JOIN translations t ON t.ayah_id = a.id
             ORDER BY md5(a.id::text || CURRENT_DATE::text)
             LIMIT $1
         `;
