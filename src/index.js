@@ -129,6 +129,7 @@ app.use('/api/hadith', require('./routes/hadith.routes'));
 app.use("/api/articles", require("./routes/article.routes"));
 app.use("/api/hafalan", require("./routes/ayahMemorization.routes"));
 app.use("/api/dzikir", require("./routes/dzikir.routes"));
+app.use('/api/ayah-inspiration', require('./routes/ayahInspiration.routes'));
 
 app.use((_req, res) => {
     res.status(404).json({ status: 'Error', message: 'Resource tidak ditemukan' });
