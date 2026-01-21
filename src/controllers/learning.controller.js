@@ -54,11 +54,14 @@ const getLessonsByTopic = async (req, res) => {
                         l.id as lesson_id,
                         l.title,
                         l.subtitle,
+                        s.image_url,
                         'OPEN_LESSON_STEPS' as action_type,
                         l.id::text as action_value
                     FROM lessons l
                     JOIN learning_materials m ON l.material_id = m.id
-                    WHERE m.action_value = $1 AND l.is_active = true
+                    LEFT JOIN surahs s ON l.surah_id = s.id
+                    WHERE m.action_value = $1
+                    AND l.is_active = true
                     ORDER BY l.display_order ASC;
                 `,
                 values: [topicSlug]
@@ -78,11 +81,19 @@ const getLessonsByTopic = async (req, res) => {
 const getLessonSteps = async (req, res) => {
     try {
         const { lessonId } = req.params;
+
         const query = `
-            SELECT * FROM lesson_steps
-            WHERE lesson_id = $1 AND is_active = true
-            ORDER BY step_order ASC;
+            SELECT 
+                ls.*,
+                s.image_url
+            FROM lesson_steps ls
+            JOIN lessons l ON ls.lesson_id = l.id
+            LEFT JOIN surahs s ON l.surah_id = s.id
+            WHERE ls.lesson_id = $1
+              AND ls.is_active = true
+            ORDER BY ls.step_order ASC;
         `;
+
         const { rows } = await db.query(query, [lessonId]);
         res.status(200).json({ status: 'success', data: rows });
     } catch (error) {
