@@ -59,7 +59,7 @@ const getLessonsByTopic = async (req, res) => {
                         l.id::text as action_value
                     FROM lessons l
                     JOIN learning_materials m ON l.material_id = m.id
-                    LEFT JOIN surahs s ON l.surah_id = s.id
+                    LEFT JOIN surahs s ON l.display_order = s.id
                     WHERE m.action_value = $1
                     AND l.is_active = true
                     ORDER BY l.display_order ASC;
@@ -88,9 +88,9 @@ const getLessonSteps = async (req, res) => {
                 s.image_url
             FROM lesson_steps ls
             JOIN lessons l ON ls.lesson_id = l.id
-            LEFT JOIN surahs s ON l.surah_id = s.id
+            LEFT JOIN surahs s ON l.display_order = s.id
             WHERE ls.lesson_id = $1
-              AND ls.is_active = true
+            AND ls.is_active = true
             ORDER BY ls.step_order ASC;
         `;
 
