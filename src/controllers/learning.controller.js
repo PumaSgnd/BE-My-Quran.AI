@@ -33,9 +33,8 @@ const getLessonsByTopic = async (req, res) => {
                 text: `
                     SELECT 
                         l.id as lesson_id,
-                        s.id as surah_id,
-                        s.name_simple,
-                        s.name_translation_id,
+                        s.name as title,
+                        s.name_translation_id as subtitle,
                         s.image_url,
                         'OPEN_LESSON_STEPS' as action_type,
                         l.id::text as action_value
