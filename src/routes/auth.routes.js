@@ -3,6 +3,12 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set in environment variables!");
+}
+
 // ===== GOOGLE LOGIN =====
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'], session: false })
@@ -21,7 +27,7 @@ router.get('/google/callback',
           name: req.user.display_name,
           created_at: req.user.created_at || req.user.updated_at || new Date().toISOString(),
         },
-        process.env.JWT_SECRET || "default_secret",
+        JWT_SECRET,
         { expiresIn: "7d" }
       );
 
@@ -55,7 +61,7 @@ router.get('/facebook/callback',
           // created_at: createdAt,
           created_at: req.user.created_at || req.user.updated_at || new Date().toISOString(),
         },
-        process.env.JWT_SECRET || "default_secret",
+        JWT_SECRET,
         { expiresIn: "7d" }
       );
       const redirectUrl = `myquranai://auth/success?token=${token}`;
@@ -66,6 +72,40 @@ router.get('/facebook/callback',
     }
   }
 );
+
+// ===== REFRESH TOKEN =====
+router.post('/refresh', (req, res) => {
+  try {
+    const oldToken = req.headers['x-access-token'];
+    if (!oldToken) {
+      return res.status(401).json({ status: "error", message: "No token" });
+    }
+
+    const decoded = jwt.verify(oldToken, JWT_SECRET);
+
+    const newToken = jwt.sign(
+      {
+        id: decoded.id,
+        email: decoded.email,
+        name: decoded.name,
+        photo: decoded.photo,
+        created_at: decoded.created_at,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      status: "success",
+      token: newToken,
+    });
+  } catch (err) {
+    return res.status(401).json({
+      status: "error",
+      message: "Token invalid or expired",
+    });
+  }
+});
 
 // ===== PROFILE =====
 router.get('/profile', (req, res) => {
