@@ -23,6 +23,11 @@ AyahViews.belongsTo(Ayah, { foreignKey: "ayah_id" });
 Ayah.hasMany(Translation, { foreignKey: "ayah_id", as: "Translations" });
 Translation.belongsTo(Ayah, { foreignKey: "ayah_id", as: "Ayah" });
 
+// Jurnal 
+
+const JournalMonthlyTarget = require('./JournalMonthlyTarget')(sequelize, DataTypes);
+const JournalEntry = require('./JournalEntry')(sequelize, DataTypes);
+
 module.exports = {
   sequelize,
   Ayah,
@@ -31,4 +36,8 @@ module.exports = {
   Translation,
   PrayerTimesCache,
   UserPrayerPref,
+
+  // journal
+  JournalMonthlyTarget,
+  JournalEntry,
 };
