@@ -2,11 +2,10 @@
 const express = require('express');
 const router = express.Router();
 
-const requireLogin = require('../middlewares/requireLogin.middleware');
 const journalController = require('../controllers/journal.controller');
+const { isLoggedIn } = require('../middlewares/auth.middleware.js');
 
-// Semua endpoint jurnal wajib login
-router.use(requireLogin);
+router.use(isLoggedIn);
 
 // Target bulanan
 router.get('/monthly-target', journalController.getMonthlyTarget);
