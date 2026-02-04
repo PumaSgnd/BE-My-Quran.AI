@@ -170,11 +170,16 @@ async function createEntry(userId, payload) {
     });
 
     if (!created) {
-        entry.reflection_text = reflectionText;
-        entry.checkin_data = checkin_data;
-        entry.updated_at = nowDate;
-        await entry.save();
+    entry.reflection_text = reflectionText;
+    entry.checkin_data = checkin_data;
+    const today = todayStr();
+    if (entry.entry_date === today) {
+        entry.created_at = nowDate;
     }
+
+    entry.updated_at = nowDate;
+    await entry.save();
+}
 
     return entry;
 }
