@@ -45,6 +45,16 @@ exports.listEntries = async (req, res) => {
         const { date, month, year, date_from, date_to } = req.query;
         const entries = await journalService.listEntries(userId, { date, month, year, date_from, date_to });
 
+        console.log('🔥 listEntries raw entries:', entries);
+        entries.forEach(e => {
+            console.log('📌 Entry:', {
+                id: e.id,
+                entry_date: e.entry_date,
+                created_at: e.created_at,
+                updated_at: e.updated_at,
+            });
+        });
+        
         const data = entries.map((e) => ({
             id: e.id,
             entry_date: e.entry_date,
