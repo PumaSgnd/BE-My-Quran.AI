@@ -50,18 +50,18 @@ exports.listEntries = async (req, res) => {
             console.log('📌 Entry:', {
                 id: e.id,
                 entry_date: e.entry_date,
-                created_at: e.created_at,
-                updated_at: e.updated_at,
+                created_at: e.createdAt,
+                updated_at: e.updatedAt,
             });
         });
-        
+
         const data = entries.map((e) => ({
             id: e.id,
             entry_date: e.entry_date,
             reflection_text: e.reflection_text,
             checkin_data: e.checkin_data || {},
-            created_at: e.created_at,
-            updated_at: e.updated_at,
+            created_at: e.createdAt,
+            updated_at: e.updatedAt,
         }));
 
         return res.json({ status: 'success', data });
@@ -92,8 +92,8 @@ exports.getEntryByDate = async (req, res) => {
                 entry_date: entry.entry_date,
                 reflection_text: entry.reflection_text,
                 checkin_data: entry.checkin_data || {},
-                created_at: entry.created_at,
-                updated_at: entry.updated_at,
+                created_at: entry.createdAt,
+                updated_at: entry.updatedAt,
             },
         });
     } catch (err) {
@@ -121,8 +121,8 @@ exports.getEntry = async (req, res) => {
                 entry_date: entry.entry_date,
                 reflection_text: entry.reflection_text,
                 checkin_data: entry.checkin_data || {},
-                created_at: entry.created_at,
-                updated_at: entry.updated_at,
+                created_at: entry.createdAt,
+                updated_at: entry.updatedAt,
             },
         });
     } catch (err) {
