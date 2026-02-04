@@ -303,14 +303,14 @@ async function getInsights(userId, { range, date }) {
 
     const totalEntries = entries.length;
 
+    function isEntryCreatedSameDay(e) {
+        const createdDay = DateTime.fromJSDate(e.created_at, { zone: ZONE }).toISODate();
+        return createdDay === e.entry_date;
+    }
     // ---- daily counts + longest streak (berdasarkan entry_date di dalam range) ----
     const dailyMap = new Map();
     for (const e of entries) {
-        const createdDay = DateTime
-            .fromJSDate(e.created_at, { zone: ZONE })
-            .toISODate();
-
-        if (createdDay !== e.entry_date) continue;
+        if (!isEntryCreatedSameDay(e)) continue;
         const d = e.entry_date;
         if (!dailyMap.has(d)) {
             dailyMap.set(d, { date: d, count: 0 });
