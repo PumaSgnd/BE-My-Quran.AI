@@ -5,7 +5,7 @@ const router = express.Router();
 const journalController = require('../controllers/journal.controller');
 const { isLoggedIn } = require('../middlewares/auth.middleware.js');
 
-router.use(isLoggedIn);
+// router.use(isLoggedIn);
 
 // Target bulanan
 router.get('/monthly-target', journalController.getMonthlyTarget);
