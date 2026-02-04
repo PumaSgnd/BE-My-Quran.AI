@@ -159,6 +159,7 @@ async function createEntry(userId, payload) {
     // jika sudah ada entri di tanggal tersebut, kita update; kalau belum, create.
     const [entry, created] = await JournalEntry.findOrCreate({
         where: { user_id: userId, entry_date },
+
         defaults: {
             user_id: userId,
             entry_date,
@@ -305,6 +306,11 @@ async function getInsights(userId, { range, date }) {
     // ---- daily counts + longest streak (berdasarkan entry_date di dalam range) ----
     const dailyMap = new Map();
     for (const e of entries) {
+        const createdDay = DateTime
+            .fromJSDate(e.created_at, { zone: ZONE })
+            .toISODate();
+
+        if (createdDay !== e.entry_date) continue;
         const d = e.entry_date;
         if (!dailyMap.has(d)) {
             dailyMap.set(d, { date: d, count: 0 });
