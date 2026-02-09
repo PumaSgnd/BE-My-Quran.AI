@@ -45,29 +45,49 @@ async function saveMessage({
   return rows[0].id;
 }
 
-async function loadRecentMessages(userId, sessionId, limit = 8) {
-  const sql = `
-    SELECT role, content
-    FROM (
-      SELECT DISTINCT ON (COALESCE(parent_message_id, id))
-        role,
-        content,
-        created_at
-      FROM messages
-      WHERE user_id = $1
-        AND session_id = $2
-      ORDER BY COALESCE(parent_message_id, id), created_at DESC
-    ) t
-    ORDER BY created_at ASC
-    LIMIT $3
-  `;
+async function loadRecentMessages(userId, sessionId, rootId = null, limit = 12) {
+  let sql;
+  let params;
 
-  const { rows } = await db.query(sql, [userId, sessionId, limit]);
-  return rows;
+  if (rootId) {
+    sql = `
+      WITH RECURSIVE chain AS (
+        SELECT *
+        FROM messages
+        WHERE id = $3
+
+        UNION ALL
+
+        SELECT m.*
+        FROM messages m
+        INNER JOIN chain c ON m.parent_message_id = c.id
+      )
+      SELECT role, content
+      FROM chain
+      WHERE role IN ('user','assistant')
+      ORDER BY created_at ASC
+      LIMIT $4
+    `;
+
+    params = [userId, sessionId, rootId, limit];
+  } else {
+    sql = `
+      SELECT role, content
+      FROM messages
+      WHERE user_id = $1 AND session_id = $2
+      ORDER BY created_at DESC
+      LIMIT $3
+    `;
+
+    params = [userId, sessionId, limit];
+  }
+
+  const { rows } = await db.query(sql, params);
+  return rows.reverse();
 }
 
 router.post("/", async (req, res) => {
-  const { message, userId, sessionId = "default" } = req.body;
+  const { message, userId, rootId, sessionId = "default" } = req.body;
 
   if (!message || !userId) {
     return res.status(400).json({
@@ -83,7 +103,9 @@ router.post("/", async (req, res) => {
       content: message
     });
 
-    const history = await loadRecentMessages(userId, sessionId);
+    const effectiveRoot = rootId || userMsgId;
+
+    const history = await loadRecentMessages(userId, sessionId, effectiveRoot);
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -132,7 +154,7 @@ router.put("/edit", async (req, res) => {
       edited: true
     });
 
-    const history = await loadRecentMessages(userId, sessionId);
+    const history = await loadRecentMessages(userId, sessionId, editedUserId);
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
