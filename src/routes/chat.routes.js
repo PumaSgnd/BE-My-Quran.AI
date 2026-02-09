@@ -54,7 +54,9 @@ async function loadRecentMessages(userId, sessionId, rootId = null, limit = 12) 
       WITH RECURSIVE chain AS (
         SELECT *
         FROM messages
-        WHERE id = $3
+        WHERE id = $1
+          AND user_id = $2
+          AND session_id = $3
 
         UNION ALL
 
@@ -68,8 +70,8 @@ async function loadRecentMessages(userId, sessionId, rootId = null, limit = 12) 
       ORDER BY created_at ASC
       LIMIT $4
     `;
-
-    params = [userId, sessionId, rootId, limit];
+    
+    params = [rootId, userId, sessionId, limit];
   } else {
     sql = `
       SELECT role, content
