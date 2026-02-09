@@ -48,15 +48,22 @@ async function saveMessage({
 async function loadRecentMessages(userId, sessionId, limit = 8) {
   const sql = `
     SELECT role, content
-    FROM messages
-    WHERE user_id = $1
-      AND session_id = $2
-    ORDER BY created_at DESC
+    FROM (
+      SELECT DISTINCT ON (COALESCE(parent_message_id, id))
+        role,
+        content,
+        created_at
+      FROM messages
+      WHERE user_id = $1
+        AND session_id = $2
+      ORDER BY COALESCE(parent_message_id, id), created_at DESC
+    ) t
+    ORDER BY created_at ASC
     LIMIT $3
   `;
 
   const { rows } = await db.query(sql, [userId, sessionId, limit]);
-  return rows.reverse();
+  return rows;
 }
 
 router.post("/", async (req, res) => {
@@ -69,7 +76,12 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    await saveMessage({ userId, sessionId, role: "user", content: message });
+    const userMsgId = await saveMessage({
+      userId,
+      sessionId,
+      role: "user",
+      content: message
+    });
 
     const history = await loadRecentMessages(userId, sessionId);
 
@@ -89,7 +101,8 @@ router.post("/", async (req, res) => {
       userId,
       sessionId,
       role: "assistant",
-      content: reply
+      content: reply,
+      parentMessageId: userMsgId
     });
 
     res.json({ reply });
@@ -110,7 +123,7 @@ router.put("/edit", async (req, res) => {
   }
 
   try {
-    await saveMessage({
+    const editedUserId = await saveMessage({
       userId,
       sessionId,
       role: "user",
@@ -137,7 +150,8 @@ router.put("/edit", async (req, res) => {
       userId,
       sessionId,
       role: "assistant",
-      content: reply
+      content: reply,
+      parentMessageId: editedUserId
     });
 
     res.json({ reply });
@@ -167,7 +181,7 @@ router.get("/", async (req, res) => {
       FROM messages
       WHERE user_id = $1
         AND session_id = $2
-      ORDER BY created_at ASC
+      ORDER BY COALESCE(parent_message_id, id), created_at ASC
     `;
 
     const { rows } = await db.query(sql, [userId, sessionId]);
