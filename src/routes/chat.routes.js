@@ -70,7 +70,7 @@ async function loadRecentMessages(userId, sessionId, rootId = null, limit = 12) 
       ORDER BY created_at ASC
       LIMIT $4
     `;
-    
+
     params = [rootId, userId, sessionId, limit];
   } else {
     sql = `
@@ -89,34 +89,28 @@ async function loadRecentMessages(userId, sessionId, rootId = null, limit = 12) 
 }
 
 router.post("/", async (req, res) => {
-  const { message, userId, rootId, sessionId = "default" } = req.body;
-
-  if (!message || !userId) {
-    return res.status(400).json({
-      error: "Field 'message' dan 'userId' wajib ada"
-    });
-  }
+  const { message, userId, rootId, retry = false, sessionId = "default" } = req.body;
 
   try {
-    const userMsgId = await saveMessage({
-      userId,
-      sessionId,
-      role: "user",
-      content: message
-    });
+    let userMsgId = rootId;
 
-    const effectiveRoot = rootId || userMsgId;
+    if (!retry) {
+      userMsgId = await saveMessage({
+        userId,
+        sessionId,
+        role: "user",
+        content: message
+      });
+    }
 
-    const history = await loadRecentMessages(userId, sessionId, effectiveRoot);
+    const history = await loadRecentMessages(userId, sessionId, userMsgId);
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...history
-      ],
-      temperature: 0.2,
-      max_tokens: 800
+      ]
     });
 
     const reply = completion.choices[0].message.content;
@@ -131,8 +125,8 @@ router.post("/", async (req, res) => {
 
     res.json({ reply });
 
-  } catch (err) {
-    console.error("Chat error:", err);
+  } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Server error" });
   }
 });
