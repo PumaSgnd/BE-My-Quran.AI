@@ -181,7 +181,11 @@ router.put("/edit", async (req, res) => {
       parentMessageId: editedUserId
     });
 
-    res.json({ reply });
+    res.json({
+      userId: editedUserId,
+      assistantId,
+      reply
+    });
 
   } catch (err) {
     console.error("Edit chat error:", err);
