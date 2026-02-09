@@ -92,7 +92,7 @@ router.post("/", async (req, res) => {
   const { message, userId, rootId, retry = false, sessionId = "default" } = req.body;
 
   try {
-    let userMsgId = rootId;
+    let userMsgId = null;
 
     if (!retry) {
       userMsgId = await saveMessage({
@@ -101,6 +101,12 @@ router.post("/", async (req, res) => {
         role: "user",
         content: message
       });
+    } else {
+      userMsgId = parseInt(rootId, 10);
+
+      if (!userMsgId) {
+        return res.status(400).json({ error: "Invalid rootId" });
+      }
     }
 
     const history = await loadRecentMessages(userId, sessionId, userMsgId);
@@ -115,7 +121,7 @@ router.post("/", async (req, res) => {
 
     const reply = completion.choices[0].message.content;
 
-    await saveMessage({
+    const assistantId = await saveMessage({
       userId,
       sessionId,
       role: "assistant",
@@ -123,7 +129,10 @@ router.post("/", async (req, res) => {
       parentMessageId: userMsgId
     });
 
-    res.json({ reply });
+    res.json({
+      id: assistantId,
+      reply
+    });
 
   } catch (e) {
     console.error(e);
