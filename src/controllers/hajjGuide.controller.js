@@ -42,11 +42,14 @@ const getHajjGuideSteps = async (req, res) => {
         const { guideId } = req.params;
 
         const query = `
-            SELECT *
-            FROM guide_steps
-            WHERE guide_id = $1
-            AND is_active = true
-            ORDER BY step_order ASC
+            SELECT 
+                gs.*,
+                hg.image_url
+            FROM guide_steps gs
+            JOIN hajj_guide hg ON gs.guide_id = hg.id
+            WHERE gs.guide_id = $1
+            AND gs.is_active = true
+            ORDER BY gs.step_order ASC
         `;
 
         const { rows } = await db.query(query, [guideId]);
@@ -64,7 +67,6 @@ const getHajjGuideSteps = async (req, res) => {
         });
     }
 };
-
 
 module.exports = {
     getHajjGuides,
