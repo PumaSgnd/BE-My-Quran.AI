@@ -7,6 +7,8 @@ router.use(isLoggedIn);
 
 router.post('/create', khatam.createPlan);
 router.get('/active', khatam.getActivePlan);
+router.get('/history', khatam.getHistory);
+router.put('/:id', khatam.updatePlan);
 router.delete('/:id', khatam.deletePlan);
 
 module.exports = router;

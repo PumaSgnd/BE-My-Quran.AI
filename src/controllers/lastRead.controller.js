@@ -77,16 +77,50 @@ const updateLastRead = async (req, res) => {
 
   try {
     await db.query(`
-      INSERT INTO last_read_multi (user_id, surah_id, ayah_id, ayah_number, verse_key)
+      INSERT INTO last_read_multi 
+      (user_id, surah_id, ayah_id, ayah_number, verse_key)
       VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (user_id, surah_id, ayah_id)
       DO UPDATE SET updated_at = CURRENT_TIMESTAMP
     `, [userId, surah_id, ayah_id, ayah_number, verse_key]);
 
-    res.status(200).json({ status: 'success', message: 'Last read ayat berhasil diperbarui.' });
+    const activePlan = await db.query(`
+      SELECT id FROM khatam_plan
+      WHERE user_id=$1 AND status='active'
+      LIMIT 1
+    `, [userId]);
+
+
+    if (activePlan.rows.length) {
+      const khatamId = activePlan.rows[0].id;
+      const juzResult = await db.query(`
+        SELECT juz_number FROM ayahs WHERE id=$1
+      `, [ayah_id]);
+
+      const juzNumber = juzResult.rows[0]?.juz_number;
+
+      if (juzNumber) {
+        await db.query(`
+          INSERT INTO khatam_progress
+          (khatam_id, surah_id, ayah_id, juz)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (khatam_id, ayah_id) DO NOTHING
+        `, [khatamId, surah_id, ayah_id, juzNumber]);
+
+      }
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Last read ayat & progress khatam berhasil diperbarui.'
+    });
+
   } catch (error) {
     console.error("Error di updateLastRead:", error);
-    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal Server Error'
+    });
   }
 };
 
