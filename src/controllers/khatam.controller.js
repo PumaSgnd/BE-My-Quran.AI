@@ -1,5 +1,4 @@
 const db = require('../config/db');
-const { nanoid } = require('nanoid');
 
 const getHijriMonth = (date = new Date(), tz = 'Asia/Jakarta') =>
     Number(
@@ -530,6 +529,7 @@ const getMyAchievements = async (req, res) => {
 const createGroup = async (req, res) => {
     const userId = req.user.id;
     const { group_name, target_date, khatam_plan_id } = req.body;
+    const { nanoid } = await import('nanoid');
     const inviteToken = nanoid(6);
     const inviteCode = Math.floor(1000 + Math.random() * 9000);
 
