@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { nanoid } = require('nanoid');
 
 const getHijriMonth = (date = new Date(), tz = 'Asia/Jakarta') =>
     Number(
@@ -139,6 +140,47 @@ const checkUnlockAllAchievement = async (userId) => {
     }
 };
 
+const distributeJuz = async (groupId, client = db) => {
+    const members = await client.query(`
+    SELECT id, user_id, role
+    FROM khatam_group_members
+    WHERE group_id=$1
+    ORDER BY 
+      CASE WHEN role='creator' THEN 2 ELSE 1 END,
+      joined_at
+  `, [groupId]);
+
+    const totalMembers = members.rows.length;
+    if (!totalMembers) return;
+
+    if (totalMembers > 30) {
+        console.error('Group member overflow:', groupId);
+        return;
+    }
+
+    const juzPerUser = Math.floor(30 / totalMembers);
+    let remainder = 30 % totalMembers;
+
+    let start = 1;
+
+    for (const m of members.rows) {
+        let end = start + juzPerUser - 1;
+
+        if (remainder > 0) {
+            end++;
+            remainder--;
+        }
+
+        await client.query(`
+      UPDATE khatam_group_members
+      SET juz_start=$1, juz_end=$2
+      WHERE id=$3
+    `, [start, end, m.id]);
+
+        start = end + 1;
+    }
+};
+
 const checkGroupCompletion = async (groupId) => {
     const unfinished = await db.query(`
         SELECT COUNT(*) 
@@ -161,7 +203,7 @@ const checkGroupCompletion = async (groupId) => {
             await unlock(m.user_id, ACHIEVEMENTS.GROUP.COMPLETE_GROUP);
             await unlock(m.user_id, ACHIEVEMENTS.GROUP.COMPLETE_GROUP_ALT);
 
-            if (await Promise.resolve(isRamadhan())) {
+            if (isRamadhan()) {
                 await unlock(m.user_id, ACHIEVEMENTS.RAMADAN.KHATAM_RAMADAN);
             }
 
@@ -381,10 +423,41 @@ const deletePlan = async (req, res) => {
     const { id } = req.params;
 
     try {
+        const groups = await db.query(`
+            SELECT group_id
+            FROM khatam_group_members
+            WHERE khatam_plan_id=$1
+        `, [id]);
+
+        const del = await db.query(`
+        DELETE FROM khatam_plan
+        WHERE id=$1 AND user_id=$2
+        RETURNING id
+        `, [id, userId]);
+
+        if (!del.rows.length) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Plan tidak ditemukan'
+            });
+        }
+
         await db.query(`
-      DELETE FROM khatam_plan
-      WHERE id=$1 AND user_id=$2
-    `, [id, userId]);
+            UPDATE khatam_groups g
+            SET status='completed'
+            WHERE g.id IN (
+            SELECT group_id
+            FROM khatam_group_members
+            WHERE khatam_plan_id=$1
+            )
+            AND NOT EXISTS (
+            SELECT 1 FROM khatam_group_members gm
+            WHERE gm.group_id=g.id
+            )
+        `, [id]);
+        for (const g of groups.rows) {
+            await distributeJuz(g.group_id);
+        }
 
         res.json({
             status: 'success',
@@ -454,29 +527,209 @@ const getMyAchievements = async (req, res) => {
     }
 };
 
-const claimAchievement = async (req, res) => {
+const createGroup = async (req, res) => {
     const userId = req.user.id;
-    const { achievement_id } = req.body;
+    const { group_name, target_date, khatam_plan_id } = req.body;
+    const inviteToken = nanoid(6);
+    const inviteCode = Math.floor(1000 + Math.random() * 9000);
+
+    const client = await db.connect();
 
     try {
+        await client.query('BEGIN');
 
-        await db.query(`
-            INSERT INTO khatam_user_achievements
-            (user_id, achievement_id, is_owned, owned_at)
-            VALUES ($1, $2, true, CURRENT_TIMESTAMP)
-            ON CONFLICT (user_id, achievement_id)
-            DO NOTHING
-        `, [userId, achievement_id]);
+        const planCheck = await client.query(`
+      SELECT id FROM khatam_plan
+      WHERE id=$1 AND user_id=$2 AND status='active'
+    `, [khatam_plan_id, userId]);
+
+        if (!planCheck.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Plan khatam tidak valid'
+            });
+        }
+
+        const group = await client.query(`
+            INSERT INTO khatam_groups 
+            (group_name, created_by, target_date, invite_token, invite_code, invite_expires_at)
+            VALUES ($1,$2,$3,$4,$5,$3)
+            RETURNING id
+        `, [group_name, userId, target_date, inviteToken, inviteCode]);
+
+        const groupId = group.rows[0].id;
+
+        await client.query(`
+      INSERT INTO khatam_group_members
+      (group_id,user_id,khatam_plan_id,role)
+      VALUES ($1,$2,$3,'creator')
+    `, [groupId, userId, khatam_plan_id]);
+
+        await distributeJuz(groupId, client);
+
+        await unlock(userId, ACHIEVEMENTS.GROUP.CREATE_GROUP);
+
+        const total = await client.query(`
+        SELECT COUNT(*) FROM khatam_group_members
+        WHERE group_id=$1
+        `, [groupId]);
+
+        if (isRamadhan() && parseInt(total.rows[0].count) >= 3) {
+            await unlock(userId, ACHIEVEMENTS.RAMADAN.CREATE_3_GROUP);
+        }
+
+        await client.query('COMMIT');
 
         res.json({
             status: 'success',
-            message: 'Achievement berhasil didapatkan'
+            group_id: groupId
         });
 
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ status: 'error' });
+    } finally {
+        client.release();
     }
+};
+
+const joinGroup = async (req, res) => {
+    const userId = req.user.id;
+    const { group_id, khatam_plan_id } = req.body;
+
+    const client = await db.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const planCheck = await client.query(`
+      SELECT id FROM khatam_plan
+      WHERE id=$1 AND user_id=$2 AND status='active'
+    `, [khatam_plan_id, userId]);
+
+        if (!planCheck.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Plan khatam tidak valid'
+            });
+        }
+
+        const groupCheck = await client.query(`
+      SELECT status, invite_expires_at FROM khatam_groups WHERE id=$1
+    `, [group_id]);
+
+        if (!groupCheck.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Group tidak ditemukan'
+            });
+        }
+
+        if (
+            groupCheck.rows[0].invite_expires_at &&
+            new Date() > groupCheck.rows[0].invite_expires_at
+        ) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invite expired'
+            });
+        }
+
+        if (groupCheck.rows[0].status !== 'active') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Group tidak aktif'
+            });
+        }
+
+        const existingMember = await client.query(`
+      SELECT id FROM khatam_group_members
+      WHERE group_id=$1 AND user_id=$2
+    `, [group_id, userId]);
+
+        if (existingMember.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Sudah join grup ini'
+            });
+        }
+
+        const total = await client.query(`
+      SELECT COUNT(*) FROM khatam_group_members
+      WHERE group_id=$1
+    `, [group_id]);
+
+        if (parseInt(total.rows[0].count) >= 30) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                status: 'error',
+                message: 'Grup sudah penuh'
+            });
+        }
+
+        await client.query(`
+      INSERT INTO khatam_group_members
+      (group_id,user_id,khatam_plan_id)
+      VALUES ($1,$2,$3)
+    `, [group_id, userId, khatam_plan_id]);
+
+        await distributeJuz(group_id, client);
+
+        await unlock(userId, ACHIEVEMENTS.UNIQUE.FIRST_JOIN_QURAN);
+
+        if (isRamadhan() && parseInt(total.rows[0].count) + 1 >= 3) {
+            await unlock(userId, ACHIEVEMENTS.RAMADAN.JOIN_3_GROUP);
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            status: 'success',
+            message: 'Berhasil join grup'
+        });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ status: 'error' });
+    } finally {
+        client.release();
+    }
+};
+
+const getGroupByInvite = async (req, res) => {
+    const { token } = req.params;
+
+    const group = await db.query(`
+    SELECT id, group_name, invite_code,
+           invite_expires_at
+    FROM khatam_groups
+    WHERE invite_token=$1
+    AND status='active'
+  `, [token]);
+
+    if (!group.rows.length) {
+        return res.status(404).json({ status: 'error' });
+    }
+
+    if (
+        group.rows[0].invite_expires_at &&
+        new Date() > group.rows[0].invite_expires_at
+    ) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Invite expired'
+        });
+    }
+
+    res.json(group.rows[0]);
 };
 
 module.exports = {
@@ -487,5 +740,7 @@ module.exports = {
     deletePlan,
     getAllAchievements,
     getMyAchievements,
-    claimAchievement
+    createGroup,
+    joinGroup,
+    getGroupByInvite
 };

@@ -10,8 +10,10 @@ router.get('/active', khatam.getActivePlan);
 router.get('/history', khatam.getHistory);
 router.put('/:id', khatam.updatePlan);
 router.delete('/:id', khatam.deletePlan);
+router.post('/group/create', khatam.createGroup);
+router.post('/group/join', khatam.joinGroup);
+router.get('/group/invite/:token', khatam.getGroupByInvite);
 router.get('/achievements', khatam.getAllAchievements);
 router.get('/achievements/me', khatam.getMyAchievements);
-router.post('/achievements/claim', khatam.claimAchievement);
 
 module.exports = router;
