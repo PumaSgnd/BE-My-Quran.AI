@@ -532,6 +532,7 @@ const createGroup = async (req, res) => {
     const { nanoid } = require('nanoid');
     const inviteToken = nanoid(6);
     const inviteCode = Math.floor(1000 + Math.random() * 9000);
+    const inviteExpiresAt = new Date(target_date);
 
     const client = await db.connect();
 
@@ -554,9 +555,9 @@ const createGroup = async (req, res) => {
         const group = await client.query(`
             INSERT INTO khatam_groups 
             (group_name, created_by, target_date, invite_token, invite_code, invite_expires_at)
-            VALUES ($1,$2,$3,$4,$5,$3)
+            VALUES ($1,$2,$3,$4,$5,$6)
             RETURNING id
-        `, [group_name, userId, target_date, inviteToken, inviteCode]);
+        `, [group_name, userId, target_date, inviteToken, inviteCode, inviteExpiresAt]);
 
         const groupId = group.rows[0].id;
 
