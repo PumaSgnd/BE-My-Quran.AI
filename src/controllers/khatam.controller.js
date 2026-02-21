@@ -584,7 +584,9 @@ const createGroup = async (req, res) => {
 
         res.json({
             status: 'success',
-            group_id: groupId
+            group_id: groupId,
+            invite_token: inviteToken,
+            invite_code: inviteCode
         });
 
     } catch (err) {
